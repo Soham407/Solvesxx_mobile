@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "FacilityPro",
+    "slug": "facilitypro-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F6F2"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.facilitypro.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8F6F2"
+      },
+      "package": "com.facilitypro.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F8F6F2",
+          "image": "./assets/splash.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FacilityPro needs camera access for job photos and QR scanning."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "FacilityPro needs location for guard tracking and attendance verification.",
+          "locationAlwaysPermission": "FacilityPro needs background location for guard patrol monitoring.",
+          "locationWhenInUsePermission": "FacilityPro needs location for attendance check-in."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#EB5E3B",
+          "sounds": []
+        }
+      ],
+      "expo-local-authentication",
+      "@morrowdigital/watermelondb-expo-plugin"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6c9ab5c5-4098-4cf8-baea-be4873577c7b"
+      }
+    },
+    "owner": "sohambhutkar"
+  }
+}
