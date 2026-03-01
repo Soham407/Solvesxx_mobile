@@ -65,8 +65,7 @@
           "sounds": []
         }
       ],
-      "expo-local-authentication",
-      "@morrowdigital/watermelondb-expo-plugin"
+      "expo-local-authentication"
     ],
     "extra": {
       "eas": {
