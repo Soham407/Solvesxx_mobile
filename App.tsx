@@ -6,11 +6,10 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_600SemiBold,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
+  CormorantGaramond_500Medium,
+  CormorantGaramond_600SemiBold,
+  CormorantGaramond_700Bold,
+} from '@expo-google-fonts/cormorant-garamond';
 import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
@@ -19,7 +18,8 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import HomeScreen from './src/screens/HomeScreen';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { AppProviders } from './src/providers/AppProviders';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,10 +32,9 @@ export default function App() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
-    DMSans_700Bold,
+    CormorantGaramond_500Medium,
+    CormorantGaramond_600SemiBold,
+    CormorantGaramond_700Bold,
     JetBrainsMono_400Regular,
     JetBrainsMono_500Medium,
   });
@@ -50,5 +49,9 @@ export default function App() {
     return null;
   }
 
-  return <HomeScreen colorScheme={colorScheme === 'dark' ? 'dark' : 'light'} />;
+  return (
+    <AppProviders>
+      <AppNavigator colorScheme={colorScheme === 'dark' ? 'dark' : 'light'} />
+    </AppProviders>
+  );
 }

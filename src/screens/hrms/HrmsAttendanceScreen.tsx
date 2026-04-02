@@ -1,0 +1,262 @@
+import * as ImagePicker from 'expo-image-picker';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { Clock3, ShieldCheck, TriangleAlert } from 'lucide-react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
+
+import { ActionButton } from '../../components/shared/ActionButton';
+import { InfoCard } from '../../components/shared/InfoCard';
+import { ScreenShell } from '../../components/shared/ScreenShell';
+import { Spacing } from '../../constants/spacing';
+import { FontFamily, FontSize } from '../../constants/typography';
+import { useAppTheme } from '../../hooks/useAppTheme';
+import { fetchHrmsAttendanceRecords, recordHrmsAttendance } from '../../lib/hrms';
+import type { HRMSTabParamList } from '../../navigation/types';
+import { useAppStore } from '../../store/useAppStore';
+
+type HrmsAttendanceScreenProps = BottomTabScreenProps<
+  HRMSTabParamList,
+  'HRMSAttendance'
+>;
+
+function formatDateLabel(value: string) {
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function formatTimeLabel(value: string | null) {
+  if (!value) {
+    return 'Pending';
+  }
+
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
+export function HrmsAttendanceScreen(_props: HrmsAttendanceScreenProps) {
+  const { colors } = useAppTheme();
+  const queryClient = useQueryClient();
+  const profile = useAppStore((state) => state.profile);
+  const onboarding = useAppStore((state) => state.onboarding);
+
+  const attendanceQuery = useQuery({
+    queryKey: ['hrms', 'attendance', profile?.employeeId],
+    queryFn: () => fetchHrmsAttendanceRecords(profile),
+    enabled: Boolean(profile),
+  });
+
+  const attendanceMutation = useMutation({
+    mutationFn: async (action: 'check-in' | 'check-out') => {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        throw new Error('Camera permission is required for selfie attendance.');
+      }
+
+      const captureResult = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        cameraType: ImagePicker.CameraType.front,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.6,
+      });
+
+      if (captureResult.canceled || !captureResult.assets[0]) {
+        throw new Error('Selfie capture was cancelled.');
+      }
+
+      return recordHrmsAttendance({
+        action,
+        onboarding,
+        profile,
+        selfieUri: captureResult.assets[0].uri,
+        mimeType: captureResult.assets[0].mimeType ?? undefined,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['hrms', 'attendance', profile?.employeeId] }),
+        queryClient.invalidateQueries({ queryKey: ['hrms', 'dashboard', profile?.employeeId, profile?.role] }),
+      ]);
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : 'Attendance could not be saved.';
+      Alert.alert('Attendance update', message);
+    },
+  });
+
+  const latestRecord = attendanceQuery.data?.[0] ?? null;
+
+  return (
+    <ScreenShell
+      eyebrow="HRMS attendance"
+      title="Selfie + geo-fence attendance"
+      description="Every attendance action validates your live location first, then stores a selfie-backed shift record for payroll and supervisor review."
+      footer={
+        <View style={styles.footer}>
+          <ActionButton
+            label="Check in with selfie"
+            loading={attendanceMutation.isPending && attendanceMutation.variables === 'check-in'}
+            onPress={() => attendanceMutation.mutate('check-in')}
+          />
+          <ActionButton
+            label="Check out with selfie"
+            variant="secondary"
+            loading={attendanceMutation.isPending && attendanceMutation.variables === 'check-out'}
+            onPress={() => attendanceMutation.mutate('check-out')}
+          />
+        </View>
+      }
+    >
+      {attendanceQuery.isLoading ? (
+        <InfoCard>
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+              Loading attendance history...
+            </Text>
+          </View>
+        </InfoCard>
+      ) : null}
+
+      <InfoCard>
+        <View style={styles.headerRow}>
+          <ShieldCheck color={colors.success} size={22} />
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Today&apos;s gate check</Text>
+        </View>
+        <Text style={[styles.statusValue, { color: colors.foreground }]}>
+          {latestRecord?.checkOutTime
+            ? 'Shift closed'
+            : latestRecord?.checkInTime
+              ? 'Checked in'
+              : 'Awaiting first selfie'}
+        </Text>
+        <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+          {latestRecord?.geoFenceStatus
+            ? `${latestRecord.geoFenceStatus.locationName} | ${latestRecord.geoFenceStatus.distanceMeters}m from the allowed point`
+            : onboarding.geoCalibration
+              ? `${onboarding.geoCalibration.locationName} is your active geo-fence anchor.`
+              : 'Complete geo-fence calibration first if attendance validation blocks you.'}
+        </Text>
+        {latestRecord?.lastSelfieUri ? (
+          <Image source={{ uri: latestRecord.lastSelfieUri }} style={styles.previewImage} />
+        ) : null}
+      </InfoCard>
+
+      <InfoCard>
+        <View style={styles.headerRow}>
+          <TriangleAlert color={colors.warning} size={22} />
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Auto punch-out policy</Text>
+        </View>
+        <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+          If the device stays outside the registered geo-fence for more than 15 consecutive minutes,
+          Phase 4 flags the shift for supervisor review and queues the record for follow-up.
+        </Text>
+      </InfoCard>
+
+      <InfoCard>
+        <View style={styles.headerRow}>
+          <Clock3 color={colors.info} size={22} />
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Recent attendance</Text>
+        </View>
+        {attendanceQuery.data?.length ? (
+          attendanceQuery.data.map((item) => (
+            <View key={item.id} style={[styles.logRow, { borderColor: colors.border }]}>
+              <View style={styles.logCopy}>
+                <Text style={[styles.logDate, { color: colors.foreground }]}>
+                  {formatDateLabel(item.logDate)}
+                </Text>
+                <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+                  In {formatTimeLabel(item.checkInTime)} | Out {formatTimeLabel(item.checkOutTime)}
+                </Text>
+                <Text style={[styles.syncTag, { color: colors.info }]}>
+                  {item.syncStatus === 'synced'
+                    ? 'Synced'
+                    : item.syncStatus === 'pending'
+                      ? 'Queued locally'
+                      : 'Preview only'}
+                </Text>
+              </View>
+              <Text style={[styles.hoursText, { color: colors.foreground }]}>
+                {item.totalHours ? `${item.totalHours}h` : '--'}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            No attendance logs yet. Your first check-in will appear here.
+          </Text>
+        )}
+      </InfoCard>
+    </ScreenShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  footer: {
+    gap: Spacing.base,
+  },
+  loadingRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.base,
+  },
+  loadingText: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.base,
+  },
+  headerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  cardTitle: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: FontSize.md,
+  },
+  statusValue: {
+    fontFamily: FontFamily.headingBold,
+    fontSize: FontSize['2xl'],
+  },
+  caption: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+  },
+  previewImage: {
+    borderRadius: 16,
+    height: 188,
+    marginTop: Spacing.sm,
+    width: '100%',
+  },
+  logRow: {
+    alignItems: 'center',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.base,
+    paddingTop: Spacing.base,
+  },
+  logCopy: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  logDate: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: FontSize.base,
+  },
+  syncTag: {
+    fontFamily: FontFamily.sansMedium,
+    fontSize: FontSize.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  hoursText: {
+    fontFamily: FontFamily.mono,
+    fontSize: FontSize.base,
+  },
+});

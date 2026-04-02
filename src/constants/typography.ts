@@ -1,15 +1,15 @@
 export const FontFamily = {
-  sans:         'PlusJakartaSans_400Regular',
-  sansMedium:   'PlusJakartaSans_500Medium',
-  sansSemiBold: 'PlusJakartaSans_600SemiBold',
-  sansBold:     'PlusJakartaSans_700Bold',
-  sansExtraBold:'PlusJakartaSans_800ExtraBold',
-  heading:      'DMSans_400Regular',
-  headingMedium:'DMSans_500Medium',
-  headingSemiBold:'DMSans_600SemiBold',
-  headingBold:  'DMSans_700Bold',
-  mono:         'JetBrainsMono_400Regular',
-  monoMedium:   'JetBrainsMono_500Medium',
+  sans:            'PlusJakartaSans_400Regular',
+  sansMedium:      'PlusJakartaSans_500Medium',
+  sansSemiBold:    'PlusJakartaSans_600SemiBold',
+  sansBold:        'PlusJakartaSans_700Bold',
+  sansExtraBold:   'PlusJakartaSans_800ExtraBold',
+  heading:         'CormorantGaramond_500Medium',
+  headingMedium:   'CormorantGaramond_500Medium',
+  headingSemiBold: 'CormorantGaramond_600SemiBold',
+  headingBold:     'CormorantGaramond_700Bold',
+  mono:            'JetBrainsMono_400Regular',
+  monoMedium:      'JetBrainsMono_500Medium',
 };
 
 export const FontSize = {
