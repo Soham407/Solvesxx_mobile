@@ -54,11 +54,27 @@ const DEV_PREVIEW_PROFILES = [
     label: 'Supplier preview',
   },
   {
+    phone: '+914141414141',
+    role: 'resident',
+    label: 'Resident preview',
+  },
+  {
     phone: '+913333333333',
     role: 'vendor',
     label: 'Vendor preview',
   },
 ] as const satisfies Array<{ phone: string; role: AppRole; label: string }>;
+
+type DemoOtpVerifyResponse = {
+  ok: boolean;
+  phone: string;
+  role: AppRole;
+  session: {
+    access_token: string;
+    refresh_token: string;
+    [key: string]: unknown;
+  };
+};
 
 export function normalizePhoneNumber(input: string) {
   const trimmed = input.trim();
@@ -79,8 +95,46 @@ export function normalizePhoneNumber(input: string) {
   return trimmed;
 }
 
+function getWebAppUrl() {
+  return (process.env.EXPO_PUBLIC_WEB_APP_URL ?? '').trim().replace(/\/+$/, '');
+}
+
+export function isDemoOtpBackendConfigured() {
+  return Boolean(getWebAppUrl());
+}
+
+async function callDemoOtpEndpoint<TResponse>(path: string, body: Record<string, string>) {
+  const baseUrl = getWebAppUrl();
+
+  if (!baseUrl) {
+    throw new Error('Demo OTP backend URL is not configured.');
+  }
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | TResponse
+    | { error?: string };
+
+  if (!response.ok) {
+    throw new Error(
+      typeof (payload as { error?: string }).error === 'string'
+        ? (payload as { error: string }).error
+        : 'Demo OTP request failed.',
+    );
+  }
+
+  return payload as TResponse;
+}
+
 export function getDevPreviewCredentials() {
-  if (!__DEV__) {
+  if (!__DEV__ || isDemoOtpBackendConfigured()) {
     return null;
   }
 
@@ -91,7 +145,7 @@ export function getDevPreviewCredentials() {
 }
 
 export function isDevPreviewPhone(input: string) {
-  if (!__DEV__) {
+  if (!__DEV__ || isDemoOtpBackendConfigured()) {
     return false;
   }
 
@@ -104,7 +158,7 @@ export function isDevPreviewOtp(phone: string, token: string) {
 }
 
 export function getDevPreviewRole(phone: string): AppRole | null {
-  if (!__DEV__) {
+  if (!__DEV__ || isDemoOtpBackendConfigured()) {
     return null;
   }
 
@@ -114,6 +168,11 @@ export function getDevPreviewRole(phone: string): AppRole | null {
 
 export async function sendOtp(rawPhoneNumber: string) {
   const phone = normalizePhoneNumber(rawPhoneNumber);
+
+  if (isDemoOtpBackendConfigured()) {
+    await callDemoOtpEndpoint('/api/mobile/demo-otp/send', { phone });
+    return phone;
+  }
 
   if (isDevPreviewPhone(phone)) {
     return phone;
@@ -132,10 +191,42 @@ export async function sendOtp(rawPhoneNumber: string) {
 
 export async function verifyOtp(phone: string, token: string) {
   const normalizedPhone = normalizePhoneNumber(phone);
+
+  if (isDemoOtpBackendConfigured()) {
+    const payload = await callDemoOtpEndpoint<DemoOtpVerifyResponse>('/api/mobile/demo-otp/verify', {
+      phone: normalizedPhone,
+      otp: token.trim(),
+    });
+
+    const { data, error } = await supabase.auth.setSession({
+      access_token: payload.session.access_token,
+      refresh_token: payload.session.refresh_token,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data.session ?? null;
+  }
+
   const { data, error } = await supabase.auth.verifyOtp({
     phone: normalizedPhone,
     token,
     type: 'sms',
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.session;
+}
+
+export async function signInWithEmailPassword(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
   });
 
   if (error) {
