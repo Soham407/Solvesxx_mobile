@@ -127,9 +127,7 @@ async function uploadPrivateImage(options: {
       upsert: false,
     });
 
-    if (error) {
-      throw error;
-    }
+    throwIfError(error);
 
     return `${options.bucket}/${path}`;
   }
@@ -156,16 +154,43 @@ async function uploadPrivateImage(options: {
     upsert: false,
   });
 
-  if (error) {
-    throw error;
-  }
+  throwIfError(error);
 
   return `${options.bucket}/${path}`;
 }
 
-function throwIfError(error: Error | null) {
+function normalizeError(error: unknown) {
+  if (!error) {
+    return null;
+  }
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const message =
+      'message' in error && typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : 'Unexpected backend error';
+    const code =
+      'code' in error && typeof (error as { code?: unknown }).code === 'string'
+        ? (error as { code: string }).code
+        : null;
+
+    return new Error(code ? `${message} (${code})` : message);
+  }
+
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+
+  return new Error('Unexpected backend error');
+}
+
+function throwIfError(error: unknown) {
   if (error) {
-    throw error;
+    throw normalizeError(error);
   }
 }
 
