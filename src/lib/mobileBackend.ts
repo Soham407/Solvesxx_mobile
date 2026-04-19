@@ -1,3 +1,4 @@
+import { isStagingAutomationEnabled } from './stagingAutomation';
 import { supabase } from './supabase';
 import type { AppUserProfile } from '../types/app';
 import type {
@@ -11,6 +12,30 @@ import type { ResidentPendingVisitor } from '../types/resident';
 
 const VISITOR_MEDIA_BUCKET = 'visitor-photos';
 const GUARD_SECURE_MEDIA_BUCKET = 'guard-secure-media';
+
+function parseDataUri(uri: string) {
+  const match = uri.match(/^data:([^;]+);base64,(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    base64: match[2],
+    contentType: match[1],
+  };
+}
+
+function decodeBase64(base64: string) {
+  const binary = globalThis.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
 
 function createUploadName(prefix: string, uri: string, contentType: string) {
   const safePrefix = prefix.replace(/^\/+|\/+$/g, '');
@@ -83,9 +108,45 @@ async function uploadPrivateImage(options: {
     return null;
   }
 
-  const response = await fetch(options.uri);
-  const blob = await response.blob();
-  const path = createUploadName(options.prefix, options.uri, blob.type || 'image/jpeg');
+  const sourceUri = options.uri;
+
+  const parsedDataUri = parseDataUri(sourceUri);
+
+  if (parsedDataUri) {
+    if (isStagingAutomationEnabled()) {
+      return null;
+    }
+
+    const path = createUploadName(options.prefix, sourceUri, parsedDataUri.contentType);
+    const bytes = decodeBase64(parsedDataUri.base64);
+    const { error } = await supabase.storage.from(options.bucket).upload(path, bytes, {
+      contentType: parsedDataUri.contentType,
+      upsert: false,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return `${options.bucket}/${path}`;
+  }
+
+  const blob = await (async () => {
+    if (/^https?:\/\//i.test(sourceUri)) {
+      const response = await fetch(sourceUri);
+      return response.blob();
+    }
+
+    return new Promise<Blob>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.onerror = () => reject(new Error('Photo file could not be read.'));
+      request.onload = () => resolve(request.response as Blob);
+      request.responseType = 'blob';
+      request.open('GET', sourceUri, true);
+      request.send();
+    });
+  })();
+  const path = createUploadName(options.prefix, sourceUri, blob.type || 'image/jpeg');
 
   const { error } = await supabase.storage.from(options.bucket).upload(path, blob, {
     contentType: blob.type || 'image/jpeg',
@@ -222,6 +283,7 @@ export async function createGuardVisitorEntry(input: {
     p_purpose: input.purpose,
     p_vehicle_number: input.vehicleNumber || null,
     p_visitor_name: input.visitorName,
+    p_visitor_type: 'guest',
   });
 
   throwIfError(error);

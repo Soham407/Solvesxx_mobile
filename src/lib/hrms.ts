@@ -569,6 +569,14 @@ async function saveDocumentDraft(employeeId: string | null, draft: HrmsDocument)
   await writeStoredArray(key, nextValue);
 }
 
+export async function clearHrmsPreviewState(employeeId: string | null) {
+  await Promise.all([
+    AsyncStorage.removeItem(getStorageKey(ATTENDANCE_DRAFT_KEY_PREFIX, employeeId)),
+    AsyncStorage.removeItem(getStorageKey(LEAVE_DRAFT_KEY_PREFIX, employeeId)),
+    AsyncStorage.removeItem(getStorageKey(DOCUMENT_DRAFT_KEY_PREFIX, employeeId)),
+  ]);
+}
+
 function applyLeaveBalances(
   leaveTypes: HrmsLeaveType[],
   applications: HrmsLeaveApplication[],
@@ -593,8 +601,19 @@ function applyLeaveBalances(
 }
 
 async function fileUriToBlob(uri: string) {
-  const response = await fetch(uri);
-  return response.blob();
+  if (/^https?:\/\//i.test(uri)) {
+    const response = await fetch(uri);
+    return response.blob();
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.onerror = () => reject(new Error('Document file could not be read.'));
+    request.onload = () => resolve(request.response as Blob);
+    request.responseType = 'blob';
+    request.open('GET', uri, true);
+    request.send();
+  });
 }
 
 function inferFileExtension(uri: string, mimeType?: string) {
