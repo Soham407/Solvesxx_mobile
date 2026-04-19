@@ -264,6 +264,14 @@ interface GuardMutationOptions {
   queueType: GuardOfflineQueueItem['actionType'];
 }
 
+function isDataUri(value: string | null | undefined) {
+  return typeof value === 'string' && value.startsWith('data:');
+}
+
+function sanitizePersistedPhotoUri(value: string | null | undefined) {
+  return isDataUri(value) ? null : (value ?? null);
+}
+
 interface GuardStore extends GuardPersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
@@ -297,6 +305,9 @@ interface GuardStore extends GuardPersistedState {
     frequentVisitor: boolean;
   }) => Promise<{ queued: boolean }>;
   checkoutVisitor: (id: string) => Promise<{ queued: boolean; updated: boolean }>;
+  approveVisitor: (id: string) => Promise<{ updated: boolean }>;
+  denyVisitor: (id: string, reason?: string) => Promise<{ updated: boolean }>;
+  setVisitorFrequent: (id: string, isFrequent: boolean) => Promise<{ updated: boolean }>;
   flushOfflineQueue: () => Promise<number>;
 }
 
@@ -308,11 +319,23 @@ function buildPersistedState(state: GuardStore): GuardPersistedState {
     lastPatrolResetAt: state.lastPatrolResetAt,
     lastSyncAt: state.lastSyncAt,
     lastKnownLocation: state.lastKnownLocation,
-    attendanceLog: state.attendanceLog,
-    sosEvents: state.sosEvents,
-    checklistItems: state.checklistItems,
+    attendanceLog: state.attendanceLog.map((entry) => ({
+      ...entry,
+      photoUri: sanitizePersistedPhotoUri(entry.photoUri),
+    })),
+    sosEvents: state.sosEvents.map((event) => ({
+      ...event,
+      photoUri: sanitizePersistedPhotoUri(event.photoUri),
+    })),
+    checklistItems: state.checklistItems.map((item) => ({
+      ...item,
+      evidenceUri: sanitizePersistedPhotoUri(item.evidenceUri),
+    })),
     checklistSubmittedAt: state.checklistSubmittedAt,
-    visitorLog: state.visitorLog,
+    visitorLog: state.visitorLog.map((visitor) => ({
+      ...visitor,
+      photoUri: sanitizePersistedPhotoUri(visitor.photoUri),
+    })),
     frequentVisitors: state.frequentVisitors,
     emergencyContacts: state.emergencyContacts,
     offlineQueue: state.offlineQueue,
@@ -662,6 +685,86 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
     await persistGuardStore(get);
     return {
       queued: get().isOfflineMode,
+      updated: true,
+    };
+  },
+
+  approveVisitor: async (id) => {
+    const visitor = get().visitorLog.find((entry) => entry.id === id);
+
+    if (!visitor || visitor.approvalStatus !== 'pending') {
+      return {
+        updated: false,
+      };
+    }
+
+    set((state) => ({
+      visitorLog: state.visitorLog.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              approvalStatus: 'approved',
+              decisionAt: new Date().toISOString(),
+            }
+          : entry,
+      ),
+    }));
+
+    await persistGuardStore(get);
+    return {
+      updated: true,
+    };
+  },
+
+  denyVisitor: async (id, _reason) => {
+    const visitor = get().visitorLog.find((entry) => entry.id === id);
+
+    if (!visitor || visitor.approvalStatus !== 'pending') {
+      return {
+        updated: false,
+      };
+    }
+
+    set((state) => ({
+      visitorLog: state.visitorLog.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              approvalStatus: 'denied',
+              decisionAt: new Date().toISOString(),
+            }
+          : entry,
+      ),
+    }));
+
+    await persistGuardStore(get);
+    return {
+      updated: true,
+    };
+  },
+
+  setVisitorFrequent: async (id, isFrequent) => {
+    const visitor = get().visitorLog.find((entry) => entry.id === id);
+
+    if (!visitor) {
+      return {
+        updated: false,
+      };
+    }
+
+    set((state) => ({
+      visitorLog: state.visitorLog.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              frequentVisitor: isFrequent,
+            }
+          : entry,
+      ),
+    }));
+
+    await persistGuardStore(get);
+    return {
       updated: true,
     };
   },
