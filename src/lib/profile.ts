@@ -272,8 +272,19 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
 }
 
 async function fileUriToBlob(uri: string) {
-  const response = await fetch(uri);
-  return response.blob();
+  if (/^https?:\/\//i.test(uri)) {
+    const response = await fetch(uri);
+    return response.blob();
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.onerror = () => reject(new Error('Profile photo file could not be read.'));
+    request.onload = () => resolve(request.response as Blob);
+    request.responseType = 'blob';
+    request.open('GET', uri, true);
+    request.send();
+  });
 }
 
 function inferFileExtension(uri: string, mimeType?: string) {
