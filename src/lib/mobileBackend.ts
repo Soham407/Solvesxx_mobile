@@ -312,14 +312,14 @@ export async function recordGuardGpsTracking(input: {
   location: GuardLocationSnapshot;
   batteryLevel?: number | null;
 }) {
-  const employeeId = input.profile?.employeeId ?? null;
+  const guardId = input.profile?.guardId ?? null;
 
-  if (isPreviewProfile(input.profile) || !employeeId) {
+  if (isPreviewProfile(input.profile) || !guardId) {
     return { synced: false };
   }
 
   const { error } = await supabase.from('gps_tracking').insert({
-    employee_id: employeeId,
+    employee_id: guardId,
     latitude: input.location.latitude,
     longitude: input.location.longitude,
     tracked_at: input.location.capturedAt,
