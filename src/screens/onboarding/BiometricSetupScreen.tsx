@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Fingerprint } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ActionButton } from '../../components/shared/ActionButton';
 import { InfoCard } from '../../components/shared/InfoCard';
@@ -8,10 +10,12 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { promptForBiometricUnlock } from '../../lib/biometrics';
+import type { OnboardingStackParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 
 export function BiometricSetupScreen() {
   const { colors } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList>>();
   const biometricCapability = useAppStore((state) => state.biometricCapability);
   const completeBiometricPrompt = useAppStore((state) => state.completeBiometricPrompt);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,6 +32,7 @@ export function BiometricSetupScreen() {
 
       if (result.success) {
         await completeBiometricPrompt(true);
+        navigation.replace('ProfilePhoto');
         return;
       }
 
@@ -44,6 +49,7 @@ export function BiometricSetupScreen() {
 
     try {
       await completeBiometricPrompt(false);
+      navigation.replace('ProfilePhoto');
     } finally {
       setIsSubmitting(false);
     }
@@ -65,12 +71,14 @@ export function BiometricSetupScreen() {
           {isAvailable ? (
             <ActionButton
               label={`Enable ${biometricCapability.label}`}
+              testID="qa_onboarding_biometric_enable"
               loading={isSubmitting}
               onPress={handleEnable}
             />
           ) : (
             <ActionButton
               label="Continue"
+              testID="qa_onboarding_biometric_continue"
               loading={isSubmitting}
               onPress={handleSkip}
             />
@@ -78,6 +86,7 @@ export function BiometricSetupScreen() {
           {isAvailable ? (
             <ActionButton
               label="Skip for now"
+              testID="qa_onboarding_biometric_skip"
               variant="ghost"
               disabled={isSubmitting}
               onPress={handleSkip}
