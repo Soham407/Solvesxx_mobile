@@ -15,12 +15,24 @@ import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { capturePhoto } from '../../lib/media';
-import { fetchGuardVisitors, isPreviewProfile, startGuardPanicAlert } from '../../lib/mobileBackend';
+import {
+  fetchGuardVisitors,
+  isPreviewProfile,
+  recordGuardAttendanceAction,
+  recordGuardGpsTracking,
+  startGuardPanicAlert,
+} from '../../lib/mobileBackend';
 import {
   calculateDistanceMeters,
   getCurrentLocationFix,
   requestGeoFencePermissions,
 } from '../../lib/location';
+import {
+  buildAssignedLocationSnapshot,
+  getStagingAutomationImageUri,
+  isStagingAutomationEnabled,
+  isStagingAutomationProfile,
+} from '../../lib/stagingAutomation';
 import type { GuardTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useGuardStore } from '../../store/useGuardStore';
@@ -104,6 +116,13 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   );
 
   async function buildLocationSnapshot() {
+    if (usePreviewFlow || (isStagingAutomationEnabled() && isStagingAutomationProfile(profile))) {
+      const snapshot = buildAssignedLocationSnapshot(profile?.assignedLocation ?? null);
+
+      await rememberLocation(snapshot);
+      return snapshot;
+    }
+
     const permissions = await requestGeoFencePermissions();
 
     if (!permissions.foregroundGranted) {
@@ -138,6 +157,11 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     };
 
     await rememberLocation(snapshot);
+    await recordGuardGpsTracking({
+      profile,
+      location: snapshot,
+      batteryLevel: null,
+    });
     return snapshot;
   }
 
@@ -165,10 +189,12 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
 
     try {
       const location = await buildLocationSnapshot();
-      const photo = await capturePhoto({
-        cameraType: 'front',
-        aspect: [1, 1],
-      });
+      const photo = usePreviewFlow
+        ? { uri: 'qa://guard-preview-selfie' }
+        : await capturePhoto({
+            cameraType: 'front',
+            aspect: [1, 1],
+          });
 
       if (!photo) {
         setMessage('Attendance capture was cancelled before the selfie was saved.');
@@ -186,14 +212,26 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
 
       const result =
         dutyStatus === 'off_duty'
-          ? await clockIn({
+          ? (await recordGuardAttendanceAction({
+              action: 'check-in',
+              profile,
               location,
               photoUri: photo.uri,
-            })
-          : await clockOut({
+            }),
+            await clockIn({
               location,
               photoUri: photo.uri,
-            });
+            }))
+          : (await recordGuardAttendanceAction({
+              action: 'check-out',
+              profile,
+              location,
+              photoUri: photo.uri,
+            }),
+            await clockOut({
+              location,
+              photoUri: photo.uri,
+            }));
 
       setMessage(
         dutyStatus === 'off_duty'
@@ -267,6 +305,28 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     try {
       const location = await buildLocationSnapshot();
       setPendingSosLocation(location);
+
+      if (usePreviewFlow) {
+        await submitSosAlert({
+          location,
+          note: 'Guard manually triggered the panic workflow. Preview evidence was attached automatically.',
+          photoUri: 'qa://guard-preview-sos',
+        });
+        setPendingSosLocation(null);
+        setIsBusy(false);
+        return;
+      }
+
+      if (isStagingAutomationEnabled() && isStagingAutomationProfile(profile)) {
+        await submitSosAlert({
+          location,
+          note: 'Guard manually triggered the panic workflow. Staging automation evidence was attached automatically.',
+          photoUri: getStagingAutomationImageUri(),
+        });
+        setPendingSosLocation(null);
+        setIsBusy(false);
+        return;
+      }
 
       const permission =
         cameraPermission?.granted === true
@@ -394,17 +454,23 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           Employee code: {profile?.employeeCode ?? 'Pending'} - Last patrol reset:{' '}
           {formatTimestamp(lastPatrolResetAt)}
         </Text>
-        {message ? <Text style={[styles.message, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.message, { color: colors.primary }]} testID="qa_guard_home_message">
+            {message}
+          </Text>
+        ) : null}
         <View style={styles.heroActions}>
           <ActionButton
             label={dutyStatus === 'on_duty' ? 'Selfie clock out' : 'Selfie clock in'}
             loading={isBusy}
+            testID="qa_guard_duty_action"
             onPress={() => void handleDutyAction()}
           />
           <ActionButton
             label="Refresh location"
             variant="secondary"
             disabled={isBusy}
+            testID="qa_guard_refresh_location"
             onPress={() => void handleRefreshLocation()}
           />
         </View>
@@ -414,6 +480,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
         accessibilityRole="button"
         disabled={isBusy}
         onPress={() => void handleTriggerSos()}
+        testID="qa_guard_sos_trigger"
         style={[
           styles.sosCard,
           {
@@ -495,6 +562,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           </View>
           <Switch
             onValueChange={(value) => void setOfflineMode(value)}
+            testID="qa_guard_offline_mode"
             thumbColor={colors.primaryForeground}
             trackColor={{ false: colors.border, true: colors.primary }}
             value={isOfflineMode}
@@ -507,12 +575,14 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           <ActionButton
             label="I am on duty"
             variant="secondary"
+            testID="qa_guard_reset_patrol"
             onPress={() => void resetPatrolClock()}
           />
           <ActionButton
             label={isSyncing ? 'Syncing...' : 'Sync queued actions'}
             variant="ghost"
             disabled={isOfflineMode || isSyncing}
+            testID="qa_guard_sync_queue"
             onPress={() => void handleSyncQueue()}
           />
         </View>
@@ -527,19 +597,27 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           <ActionButton
             label="Open checklist"
             variant="secondary"
+            testID="qa_guard_open_checklist"
             onPress={() => navigation.navigate('GuardChecklist')}
           />
           <ActionButton
             label="Log visitor"
             variant="secondary"
+            testID="qa_guard_open_visitors"
             onPress={() => navigation.navigate('GuardVisitors')}
           />
           <ActionButton
             label="Emergency contacts"
             variant="ghost"
+            testID="qa_guard_open_contacts"
             onPress={() => navigation.navigate('GuardContacts')}
           />
-          <ActionButton label="Sign out" variant="ghost" onPress={() => void signOut()} />
+          <ActionButton
+            label="Sign out"
+            variant="ghost"
+            testID="qa_guard_sign_out"
+            onPress={() => void signOut()}
+          />
         </View>
       </InfoCard>
 

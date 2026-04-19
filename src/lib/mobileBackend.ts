@@ -12,6 +12,7 @@ import type { ResidentPendingVisitor } from '../types/resident';
 
 const VISITOR_MEDIA_BUCKET = 'visitor-photos';
 const GUARD_SECURE_MEDIA_BUCKET = 'guard-secure-media';
+const ATTENDANCE_SELFIES_BUCKET = 'attendance-selfies';
 
 function parseDataUri(uri: string) {
   const match = uri.match(/^data:([^;]+);base64,(.+)$/);
@@ -166,6 +167,25 @@ function throwIfError(error: Error | null) {
   }
 }
 
+function toIsoDate(value = new Date()) {
+  return value.toISOString().split('T')[0];
+}
+
+function calculateHourDelta(start: string | null, end: string | null) {
+  if (!start || !end) {
+    return null;
+  }
+
+  const startTime = new Date(start).getTime();
+  const endTime = new Date(end).getTime();
+
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    return null;
+  }
+
+  return Number(((endTime - startTime) / (1000 * 60 * 60)).toFixed(2));
+}
+
 function normalizeApprovalStatus(options: {
   approvalStatus?: string | null;
   approvedByResident?: boolean | null;
@@ -258,6 +278,95 @@ export async function searchResidentDestinations(query: string) {
     residentName: item.resident_name,
     residentPhone: item.resident_phone,
   })) satisfies ResidentDestination[];
+}
+
+export async function recordGuardGpsTracking(input: {
+  profile: AppUserProfile | null;
+  location: GuardLocationSnapshot;
+  batteryLevel?: number | null;
+}) {
+  const employeeId = input.profile?.employeeId ?? null;
+
+  if (isPreviewProfile(input.profile) || !employeeId) {
+    return { synced: false };
+  }
+
+  const { error } = await supabase.from('gps_tracking').insert({
+    employee_id: employeeId,
+    latitude: input.location.latitude,
+    longitude: input.location.longitude,
+    tracked_at: input.location.capturedAt,
+    battery_level: input.batteryLevel ?? null,
+    accuracy_meters: null,
+    is_mock_location: false,
+    speed_kmh: null,
+    heading_degrees: null,
+  });
+
+  throwIfError(error);
+  return { synced: true };
+}
+
+export async function recordGuardAttendanceAction(input: {
+  action: 'check-in' | 'check-out';
+  profile: AppUserProfile | null;
+  location: GuardLocationSnapshot;
+  photoUri: string;
+}) {
+  const employeeId = input.profile?.employeeId ?? null;
+
+  if (isPreviewProfile(input.profile) || !employeeId) {
+    return { synced: false };
+  }
+
+  const selfiePath = await uploadPrivateImage({
+    bucket: ATTENDANCE_SELFIES_BUCKET,
+    prefix: `guard-attendance/${employeeId}`,
+    uri: input.photoUri,
+  });
+
+  const logDate = toIsoDate();
+  const now = new Date().toISOString();
+
+  const { data: existingRow, error: existingError } = await supabase
+    .from('attendance_logs')
+    .select('id, check_in_time, check_out_time')
+    .eq('employee_id', employeeId)
+    .eq('log_date', logDate)
+    .maybeSingle();
+
+  throwIfError(existingError);
+
+  const checkInTime =
+    input.action === 'check-in' ? now : typeof existingRow?.check_in_time === 'string' ? existingRow.check_in_time : null;
+  const checkOutTime =
+    input.action === 'check-out' ? now : typeof existingRow?.check_out_time === 'string' ? existingRow.check_out_time : null;
+
+  const payload = {
+    employee_id: employeeId,
+    log_date: logDate,
+    check_in_time: checkInTime,
+    check_out_time: checkOutTime,
+    check_in_location_id: input.action === 'check-in' ? input.profile?.assignedLocation?.id ?? null : null,
+    check_out_location_id: input.action === 'check-out' ? input.profile?.assignedLocation?.id ?? null : null,
+    check_in_latitude: input.action === 'check-in' ? input.location.latitude : null,
+    check_in_longitude: input.action === 'check-in' ? input.location.longitude : null,
+    check_out_latitude: input.action === 'check-out' ? input.location.latitude : null,
+    check_out_longitude: input.action === 'check-out' ? input.location.longitude : null,
+    check_in_selfie_url: input.action === 'check-in' ? selfiePath : existingRow ? undefined : selfiePath,
+    total_hours: calculateHourDelta(checkInTime, checkOutTime),
+    status: 'present',
+  };
+
+  if (existingRow?.id) {
+    const { error } = await supabase.from('attendance_logs').update(payload).eq('id', existingRow.id);
+    throwIfError(error);
+  } else {
+    const { error } = await supabase.from('attendance_logs').insert(payload);
+    throwIfError(error);
+  }
+
+  return { synced: true, selfiePath };
 }
 
 export async function createGuardVisitorEntry(input: {
