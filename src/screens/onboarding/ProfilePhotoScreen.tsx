@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ActionButton } from '../../components/shared/ActionButton';
 import { InfoCard } from '../../components/shared/InfoCard';
@@ -9,10 +11,17 @@ import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { uploadProfilePhoto } from '../../lib/profile';
+import type { OnboardingStackParamList } from '../../navigation/types';
+import {
+  getStagingAutomationImageAsset,
+  isStagingAutomationEnabled,
+  isStagingAutomationProfile,
+} from '../../lib/stagingAutomation';
 import { useAppStore } from '../../store/useAppStore';
 
 export function ProfilePhotoScreen() {
   const { colors } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList>>();
   const profile = useAppStore((state) => state.profile);
   const refreshProfile = useAppStore((state) => state.refreshProfile);
   const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -22,6 +31,11 @@ export function ProfilePhotoScreen() {
 
   const handleCapture = async () => {
     setErrorMessage(null);
+
+    if (isStagingAutomationEnabled() && isStagingAutomationProfile(profile)) {
+      setAsset(getStagingAutomationImageAsset());
+      return;
+    }
 
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -61,6 +75,7 @@ export function ProfilePhotoScreen() {
     try {
       await uploadProfilePhoto(profile.employeeId, asset.uri, asset.mimeType ?? undefined);
       await refreshProfile();
+      navigation.replace('GeoFenceCalibration');
     } catch (error) {
       const nextMessage =
         error instanceof Error ? error.message : 'We could not upload the profile photo.';
@@ -79,11 +94,18 @@ export function ProfilePhotoScreen() {
         <View style={styles.footer}>
           <ActionButton
             label={asset ? 'Save and continue' : 'Capture photo first'}
+            testID="qa_onboarding_profile_save"
             loading={isSaving}
             disabled={!asset}
             onPress={handleSave}
           />
-          <ActionButton label="Retake photo" variant="ghost" disabled={isSaving} onPress={() => void handleCapture()} />
+          <ActionButton
+            label="Retake photo"
+            testID="qa_onboarding_profile_retake"
+            variant="ghost"
+            disabled={isSaving}
+            onPress={() => void handleCapture()}
+          />
         </View>
       }
     >
@@ -91,7 +113,10 @@ export function ProfilePhotoScreen() {
         {asset ? (
           <Image source={{ uri: asset.uri }} style={styles.preview} />
         ) : (
-          <View style={[styles.placeholder, { backgroundColor: colors.secondary }]}>
+          <View
+            style={[styles.placeholder, { backgroundColor: colors.secondary }]}
+            testID="qa_onboarding_profile_placeholder"
+          >
             <Text style={[styles.placeholderText, { color: colors.mutedForeground }]}>
               Camera preview will appear here.
             </Text>
