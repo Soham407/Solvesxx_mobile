@@ -19,6 +19,7 @@ export async function capturePhoto(options: CapturePhotoOptions) {
   }
 
   const result = await ImagePicker.launchCameraAsync({
+    base64: true,
     // Keep capture flows inside the app instead of handing control to the
     // platform crop UI, which has proved unreliable on some devices/builds.
     allowsEditing: options.allowsEditing ?? false,
@@ -34,5 +35,14 @@ export async function capturePhoto(options: CapturePhotoOptions) {
     return null;
   }
 
-  return result.assets[0];
+  const asset = result.assets[0];
+
+  if (asset.base64 && asset.mimeType) {
+    return {
+      ...asset,
+      uri: `data:${asset.mimeType};base64,${asset.base64}`,
+    };
+  }
+
+  return asset;
 }

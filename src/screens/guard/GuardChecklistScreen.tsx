@@ -152,10 +152,12 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
     setMessage(null);
 
     try {
-      const photo = await capturePhoto({
-        cameraType: 'back',
-        aspect: [4, 3],
-      });
+      const photo = usePreviewFlow
+        ? { uri: `qa://guard-checklist-evidence-${itemId}` }
+        : await capturePhoto({
+            cameraType: 'back',
+            aspect: [4, 3],
+          });
 
       if (!photo) {
         setMessage('Evidence capture was cancelled.');
@@ -246,6 +248,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
           }
           loading={submitMutation.isPending}
           disabled={Boolean(checklistSubmittedAt)}
+          testID="qa_guard_checklist_submit"
           onPress={() => void handleSubmit()}
         />
       }
@@ -264,7 +267,11 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
           />
         </View>
         <ProgressBar value={progress} />
-        {message ? <Text style={[styles.message, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.message, { color: colors.primary }]} testID="qa_guard_checklist_message">
+            {message}
+          </Text>
+        ) : null}
         {checklistSubmittedAt ? (
           <Text style={[styles.caption, { color: colors.success }]}>
             Submitted at {new Date(checklistSubmittedAt).toLocaleString()}
@@ -272,11 +279,12 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         ) : null}
       </InfoCard>
 
-      {checklistItems.map((item) => (
+      {checklistItems.map((item, index) => (
         <InfoCard key={item.id}>
           <Pressable
             disabled={Boolean(checklistSubmittedAt) || item.inputType === 'numeric'}
             onPress={() => void handleToggle(item.id)}
+            testID={`qa_guard_checklist_toggle_${index}`}
             style={styles.itemHeader}
           >
             <View
@@ -299,7 +307,12 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
               )}
             </View>
             <View style={styles.itemCopy}>
-              <Text style={[styles.itemTitle, { color: colors.foreground }]}>{item.title}</Text>
+              <Text
+                style={[styles.itemTitle, { color: colors.foreground }]}
+                testID={`qa_guard_checklist_title_${index}`}
+              >
+                {item.title}
+              </Text>
               <Text style={[styles.caption, { color: colors.mutedForeground }]}>{item.description}</Text>
             </View>
           </Pressable>
@@ -322,6 +335,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
           {item.inputType === 'numeric' ? (
             <FormField
               keyboardType="numeric"
+              inputTestID={`qa_guard_checklist_numeric_${index}`}
               label={`Reading${item.numericUnitLabel ? ` (${item.numericUnitLabel})` : ''}`}
               onChangeText={(value) => handleNumericValueChange(item.id, value)}
               placeholder={
@@ -342,6 +356,16 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
             </Text>
           </View>
 
+          {item.inputType === 'yes_no' ? (
+            <ActionButton
+              label={item.status === 'completed' ? 'Mark pending' : 'Mark complete'}
+              variant="ghost"
+              disabled={Boolean(checklistSubmittedAt)}
+              testID={`qa_guard_checklist_complete_${index}`}
+              onPress={() => void handleToggle(item.id)}
+            />
+          ) : null}
+
           <ActionButton
             label={
               busyItemId === item.id
@@ -352,6 +376,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
             }
             variant="secondary"
             disabled={Boolean(checklistSubmittedAt) || busyItemId === item.id}
+            testID={`qa_guard_checklist_evidence_${index}`}
             onPress={() => void handleCaptureEvidence(item.id)}
           />
 
