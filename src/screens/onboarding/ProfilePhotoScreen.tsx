@@ -45,6 +45,7 @@ export function ProfilePhotoScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
+      base64: true,
       allowsEditing: false,
       aspect: [1, 1],
       cameraType: ImagePicker.CameraType.front,
@@ -73,7 +74,12 @@ export function ProfilePhotoScreen() {
     setErrorMessage(null);
 
     try {
-      await uploadProfilePhoto(profile.employeeId, asset.uri, asset.mimeType ?? undefined);
+      const uploadSource =
+        asset.base64 && asset.mimeType
+          ? `data:${asset.mimeType};base64,${asset.base64}`
+          : asset.uri;
+
+      await uploadProfilePhoto(profile.employeeId, uploadSource, asset.mimeType ?? undefined);
       await refreshProfile();
       navigation.replace('GeoFenceCalibration');
     } catch (error) {

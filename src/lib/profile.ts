@@ -272,6 +272,21 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
 }
 
 async function fileUriToBlob(uri: string) {
+  const dataUriMatch = uri.match(/^data:([^;]+);base64,(.+)$/);
+
+  if (dataUriMatch) {
+    const mimeType = dataUriMatch[1];
+    const base64 = dataUriMatch[2];
+    const binary = globalThis.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new Blob([bytes], { type: mimeType });
+  }
+
   if (/^https?:\/\//i.test(uri)) {
     const response = await fetch(uri);
     return response.blob();
