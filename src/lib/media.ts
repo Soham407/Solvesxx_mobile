@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { getStagingAutomationImageAsset, isStagingAutomationEnabled } from './stagingAutomation';
 
 interface CapturePhotoOptions {
   cameraType: 'front' | 'back';
@@ -7,6 +8,10 @@ interface CapturePhotoOptions {
 }
 
 export async function capturePhoto(options: CapturePhotoOptions) {
+  if (isStagingAutomationEnabled()) {
+    return getStagingAutomationImageAsset();
+  }
+
   const permission = await ImagePicker.requestCameraPermissionsAsync();
 
   if (!permission.granted) {
@@ -14,7 +19,9 @@ export async function capturePhoto(options: CapturePhotoOptions) {
   }
 
   const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: options.allowsEditing ?? true,
+    // Keep capture flows inside the app instead of handing control to the
+    // platform crop UI, which has proved unreliable on some devices/builds.
+    allowsEditing: options.allowsEditing ?? false,
     aspect: options.aspect ?? [1, 1],
     cameraType:
       options.cameraType === 'front'

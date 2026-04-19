@@ -73,12 +73,12 @@ export function HrmsDocumentsScreen(_props: HrmsDocumentsScreenProps) {
       const result =
         source === 'camera'
           ? await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
+              allowsEditing: false,
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
               quality: 0.7,
             })
           : await ImagePicker.launchImageLibraryAsync({
-              allowsEditing: true,
+              allowsEditing: false,
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
               quality: 0.7,
             });
@@ -193,10 +193,17 @@ export function HrmsDocumentsScreen(_props: HrmsDocumentsScreenProps) {
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Stored documents</Text>
         </View>
         {documentsQuery.data?.length ? (
-          documentsQuery.data.map((item) => (
-            <View key={item.id} style={[styles.documentRow, { borderColor: colors.border }]}>
+          documentsQuery.data.map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.documentRow, { borderColor: colors.border }]}
+              testID={`qa_hrms_document_row_${index}`}
+            >
               <View style={styles.documentCopy}>
-                <Text style={[styles.documentTitle, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.documentTitle, { color: colors.foreground }]}
+                  testID={`qa_hrms_document_title_${index}`}
+                >
                   {getHrmsDocumentLabel(item.documentType)}
                 </Text>
                 <Text style={[styles.helperCopy, { color: colors.mutedForeground }]}>

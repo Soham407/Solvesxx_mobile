@@ -45,7 +45,7 @@ export function ProfilePhotoScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [1, 1],
       cameraType: ImagePicker.CameraType.front,
       quality: 0.8,
@@ -124,6 +124,7 @@ export function ProfilePhotoScreen() {
         )}
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>
           We open the front camera automatically on this screen so onboarding stays fast at the gate.
+          Review the captured photo here and use Retake if needed.
         </Text>
         {errorMessage ? <Text style={[styles.errorText, { color: colors.destructive }]}>{errorMessage}</Text> : null}
       </InfoCard>

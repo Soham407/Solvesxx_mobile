@@ -198,7 +198,7 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
     try {
       const photo = await capturePhoto({
         cameraType: 'back',
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [4, 3],
       });
 
@@ -238,7 +238,11 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
           </View>
           <Camera color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_service_proof_message">
+            {message}
+          </Text>
+        ) : null}
         <Text style={[styles.caption, { color: colors.foreground }]}>
           Latest location: {formatTimestamp(lastKnownLocation?.capturedAt ?? null)}
         </Text>
@@ -251,6 +255,7 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
           label={dutyStatus === 'on_duty' ? 'Check out with selfie' : 'Check in with selfie'}
           loading={isBusy}
           onPress={() => void handleAttendance()}
+          testID="qa_service_attendance_button"
         />
       </InfoCard>
 
@@ -264,6 +269,7 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
             {ppeChecklist.map((item) => (
               <Pressable
                 key={item.id}
+                testID={`qa_service_ppe_${item.id}`}
                 accessibilityRole="button"
                 onPress={() => void togglePPEItem(item.id)}
                 style={[
@@ -292,12 +298,13 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Proof target</Text>
         <View style={styles.selectorWrap}>
           {proofEligibleTasks.length ? (
-            proofEligibleTasks.map((task) => {
+            proofEligibleTasks.map((task, index) => {
               const isSelected = task.id === selectedTaskId;
 
               return (
                 <Pressable
                   key={task.id}
+                  testID={`qa_service_proof_task_${index}`}
                   accessibilityRole="button"
                   onPress={() => setSelectedTaskId(task.id)}
                   style={[
@@ -330,7 +337,12 @@ export function ServiceProofScreen(_props: ServiceProofScreenProps) {
           <>
             <View style={styles.headerRow}>
               <View style={styles.copyWrap}>
-                <Text style={[styles.taskTitle, { color: colors.foreground }]}>{selectedTask.title}</Text>
+                <Text
+                  style={[styles.taskTitle, { color: colors.foreground }]}
+                  testID="qa_service_proof_selected_title"
+                >
+                  {selectedTask.title}
+                </Text>
                 <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                   {selectedTask.referenceCode} | {selectedTask.locationName}
                 </Text>
