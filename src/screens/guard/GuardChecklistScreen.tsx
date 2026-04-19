@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { Camera, CheckCircle2, ClipboardList, Hash } from 'lucide-react-native';
@@ -202,20 +202,25 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
       const result = await submitPreviewChecklist();
 
       if (!result.submitted) {
-        setMessage('Complete every checklist item before submitting the shift checklist.');
+        const nextMessage = 'Complete every checklist item before submitting the shift checklist.';
+        setMessage(nextMessage);
+        Alert.alert('Checklist incomplete', nextMessage);
         return;
       }
 
-      setMessage(
+      const nextMessage =
         result.queued
           ? 'Checklist locked locally and queued for sync.'
-          : 'Checklist submitted and locked for this shift.',
-      );
+          : 'Checklist submitted and locked for this shift.';
+      setMessage(nextMessage);
+      Alert.alert('Checklist submitted', nextMessage);
       return;
     }
 
     if (!isChecklistReady(checklistItems)) {
-      setMessage('Complete every required response and attach proof before submitting.');
+      const nextMessage = 'Complete every required response and attach proof before submitting.';
+      setMessage(nextMessage);
+      Alert.alert('Checklist incomplete', nextMessage);
       return;
     }
 
@@ -226,9 +231,13 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         throw new Error(result.error ?? 'Checklist submission failed.');
       }
 
-      setMessage('Checklist submitted through the backend workflow and locked for this shift.');
+      const nextMessage = 'Checklist submitted through the backend workflow and locked for this shift.';
+      setMessage(nextMessage);
+      Alert.alert('Checklist submitted', nextMessage);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Checklist submission failed.');
+      const nextMessage = error instanceof Error ? error.message : 'Checklist submission failed.';
+      setMessage(nextMessage);
+      Alert.alert('Checklist submission failed', nextMessage);
     }
   };
 
@@ -247,7 +256,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
                 : 'Submit and lock checklist'
           }
           loading={submitMutation.isPending}
-          disabled={Boolean(checklistSubmittedAt)}
+          disabled={Boolean(checklistSubmittedAt) || (!usePreviewFlow && !isChecklistReady(checklistItems))}
           testID="qa_guard_checklist_submit"
           onPress={() => void handleSubmit()}
         />

@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { AlertTriangle, ClipboardList, MapPin, ShieldAlert, Users } from 'lucide-react-native';
 
 import { MetricCard } from '../../components/guard/MetricCard';
@@ -81,17 +80,9 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const previewMode = isPreviewProfile(profile);
   const usePreviewFlow = previewMode || isOfflineMode;
 
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const sosCameraRef = useRef<CameraView | null>(null);
-  const hasCapturedSosRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSosCaptureOpen, setIsSosCaptureOpen] = useState(false);
-  const [isCapturingSos, setIsCapturingSos] = useState(false);
-  const [pendingSosLocation, setPendingSosLocation] = useState<GuardLocationSnapshot | null>(
-    null,
-  );
 
   const visitorsQuery = useQuery({
     queryKey: ['guard', 'visitors', profile?.userId],
@@ -255,19 +246,6 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     }
   };
 
-  const closeSosCapture = () => {
-    hasCapturedSosRef.current = false;
-    setIsCapturingSos(false);
-    setIsSosCaptureOpen(false);
-    setPendingSosLocation(null);
-  };
-
-  const cancelSosCapture = () => {
-    closeSosCapture();
-    setMessage('SOS capture was cancelled before evidence was recorded.');
-    setIsBusy(false);
-  };
-
   const submitSosAlert = async (options: {
     location: GuardLocationSnapshot;
     note: string;
@@ -310,7 +288,6 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
 
     try {
       const location = await buildLocationSnapshot();
-      setPendingSosLocation(location);
 
       if (usePreviewFlow) {
         await submitSosAlert({
@@ -318,8 +295,6 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           note: 'Guard manually triggered the panic workflow. Preview evidence was attached automatically.',
           photoUri: 'qa://guard-preview-sos',
         });
-        setPendingSosLocation(null);
-        setIsBusy(false);
         return;
       }
 
@@ -329,91 +304,27 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           note: 'Guard manually triggered the panic workflow. Staging automation evidence was attached automatically.',
           photoUri: getStagingAutomationImageUri(),
         });
-        setPendingSosLocation(null);
-        setIsBusy(false);
         return;
       }
 
-      const permission =
-        cameraPermission?.granted === true
-          ? cameraPermission
-          : await requestCameraPermission();
-
-      if (!permission.granted) {
-        if (!latestGuardEvidencePhotoUri) {
-          throw new Error('Camera access is required to auto-capture SOS evidence.');
-        }
-
-        await submitSosAlert({
-          location,
-          note:
-            'Guard manually triggered the panic workflow. The latest recorded guard photo was attached because live SOS capture permission was unavailable.',
-          photoUri: latestGuardEvidencePhotoUri,
-        });
-        setPendingSosLocation(null);
-        setIsBusy(false);
-        return;
-      }
-
-      setIsSosCaptureOpen(true);
-    } catch (error) {
-      setPendingSosLocation(null);
-      setMessage(error instanceof Error ? error.message : 'SOS alert could not be created.');
-      setIsBusy(false);
-    }
-  };
-
-  const handleSosCameraReady = async () => {
-    if (hasCapturedSosRef.current || !pendingSosLocation) {
-      return;
-    }
-
-    hasCapturedSosRef.current = true;
-    setIsCapturingSos(true);
-
-    try {
-      const capturedPhoto = await sosCameraRef.current?.takePictureAsync({
-        quality: 0.65,
-        shutterSound: false,
+      const photo = await capturePhoto({
+        cameraType: 'front',
+        aspect: [1, 1],
       });
 
-      const photoUri = capturedPhoto?.uri ?? latestGuardEvidencePhotoUri;
-
-      if (!photoUri) {
-        throw new Error('SOS evidence could not be captured. Please allow camera access first.');
+      if (!photo) {
+        setMessage('SOS capture was cancelled before evidence was recorded.');
+        return;
       }
 
       await submitSosAlert({
-        location: pendingSosLocation,
-        note: capturedPhoto?.uri
-          ? 'Guard manually triggered the panic workflow. SOS evidence was captured automatically.'
-          : 'Guard manually triggered the panic workflow. The latest recorded guard photo was attached because live SOS capture did not return an image.',
-        photoUri,
+        location,
+        note: 'Guard manually triggered the panic workflow. SOS evidence was captured from the front camera.',
+        photoUri: photo.uri ?? latestGuardEvidencePhotoUri ?? '',
       });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'SOS alert could not be created.');
     } finally {
-      closeSosCapture();
-      setIsBusy(false);
-    }
-  };
-
-  const handleSosCameraMountError = async (messageText?: string) => {
-    try {
-      if (!pendingSosLocation || !latestGuardEvidencePhotoUri) {
-        throw new Error(messageText || 'SOS camera could not start.');
-      }
-
-      await submitSosAlert({
-        location: pendingSosLocation,
-        note:
-          'Guard manually triggered the panic workflow. The latest recorded guard photo was attached because live SOS capture could not start.',
-        photoUri: latestGuardEvidencePhotoUri,
-      });
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'SOS alert could not be created.');
-    } finally {
-      closeSosCapture();
       setIsBusy(false);
     }
   };
@@ -649,34 +560,6 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
         ]}
       />
 
-      <Modal
-        animationType="fade"
-        onRequestClose={cancelSosCapture}
-        transparent
-        visible={isSosCaptureOpen}
-      >
-        <View style={styles.sosCaptureModal}>
-          <CameraView
-            ref={sosCameraRef}
-            active={isSosCaptureOpen}
-            facing="front"
-            mirror
-            onCameraReady={() => void handleSosCameraReady()}
-            onMountError={(event) => void handleSosCameraMountError(event.message)}
-            style={styles.sosCamera}
-          />
-          <View style={styles.sosCaptureOverlay}>
-            <ShieldAlert color={colors.destructiveForeground} size={28} />
-            <Text style={[styles.sosCaptureTitle, { color: colors.destructiveForeground }]}>
-              {isCapturingSos ? 'Capturing SOS evidence' : 'Starting SOS camera'}
-            </Text>
-            <Text style={[styles.sosCaptureCaption, { color: colors.destructiveForeground }]}>
-              Keep your face in frame while the app records emergency evidence automatically.
-            </Text>
-            <ActivityIndicator color={colors.destructiveForeground} />
-          </View>
-        </View>
-      </Modal>
     </ScreenShell>
   );
 }
@@ -720,30 +603,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize['2xl'],
   },
   sosCaption: {
-    fontFamily: FontFamily.sansMedium,
-    fontSize: FontSize.base,
-    lineHeight: 22,
-  },
-  sosCaptureModal: {
-    flex: 1,
-    backgroundColor: '#020617',
-    justifyContent: 'flex-end',
-  },
-  sosCamera: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  sosCaptureOverlay: {
-    margin: Spacing.xl,
-    borderRadius: BorderRadius['2xl'],
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-    padding: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  sosCaptureTitle: {
-    fontFamily: FontFamily.headingBold,
-    fontSize: FontSize['2xl'],
-  },
-  sosCaptureCaption: {
     fontFamily: FontFamily.sansMedium,
     fontSize: FontSize.base,
     lineHeight: 22,
