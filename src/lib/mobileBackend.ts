@@ -13,6 +13,7 @@ import type { ResidentPendingVisitor } from '../types/resident';
 const VISITOR_MEDIA_BUCKET = 'visitor-photos';
 const GUARD_SECURE_MEDIA_BUCKET = 'guard-secure-media';
 const ATTENDANCE_SELFIES_BUCKET = 'attendance-selfies';
+const CHECKLIST_EVIDENCE_BUCKET = 'checklist-evidence';
 
 function parseDataUri(uri: string) {
   const match = uri.match(/^data:([^;]+);base64,(.+)$/);
@@ -330,7 +331,9 @@ export async function recordGuardAttendanceAction(input: {
 
   const { data: existingRow, error: existingError } = await supabase
     .from('attendance_logs')
-    .select('id, check_in_time, check_out_time')
+    .select(
+      'id, check_in_time, check_out_time, check_in_location_id, check_out_location_id, check_in_latitude, check_in_longitude, check_out_latitude, check_out_longitude, check_in_selfie_url',
+    )
     .eq('employee_id', employeeId)
     .eq('log_date', logDate)
     .maybeSingle();
@@ -347,13 +350,24 @@ export async function recordGuardAttendanceAction(input: {
     log_date: logDate,
     check_in_time: checkInTime,
     check_out_time: checkOutTime,
-    check_in_location_id: input.action === 'check-in' ? input.profile?.assignedLocation?.id ?? null : null,
-    check_out_location_id: input.action === 'check-out' ? input.profile?.assignedLocation?.id ?? null : null,
-    check_in_latitude: input.action === 'check-in' ? input.location.latitude : null,
-    check_in_longitude: input.action === 'check-in' ? input.location.longitude : null,
-    check_out_latitude: input.action === 'check-out' ? input.location.latitude : null,
-    check_out_longitude: input.action === 'check-out' ? input.location.longitude : null,
-    check_in_selfie_url: input.action === 'check-in' ? selfiePath : existingRow ? undefined : selfiePath,
+    check_in_location_id:
+      input.action === 'check-in'
+        ? input.profile?.assignedLocation?.id ?? null
+        : existingRow?.check_in_location_id ?? null,
+    check_out_location_id:
+      input.action === 'check-out'
+        ? input.profile?.assignedLocation?.id ?? null
+        : existingRow?.check_out_location_id ?? null,
+    check_in_latitude:
+      input.action === 'check-in' ? input.location.latitude : existingRow?.check_in_latitude ?? null,
+    check_in_longitude:
+      input.action === 'check-in' ? input.location.longitude : existingRow?.check_in_longitude ?? null,
+    check_out_latitude:
+      input.action === 'check-out' ? input.location.latitude : existingRow?.check_out_latitude ?? null,
+    check_out_longitude:
+      input.action === 'check-out' ? input.location.longitude : existingRow?.check_out_longitude ?? null,
+    check_in_selfie_url:
+      input.action === 'check-in' ? selfiePath : existingRow?.check_in_selfie_url ?? selfiePath,
     total_hours: calculateHourDelta(checkInTime, checkOutTime),
     status: 'present',
   };
@@ -665,7 +679,7 @@ export async function submitGuardChecklist(items: GuardChecklistItem[]) {
       evidence_url:
         item.evidenceUri && !isHttpUrl(item.evidenceUri)
           ? await uploadPrivateImage({
-              bucket: GUARD_SECURE_MEDIA_BUCKET,
+              bucket: CHECKLIST_EVIDENCE_BUCKET,
               prefix: `checklist-evidence/${checklistId}`,
               uri: item.evidenceUri,
             })

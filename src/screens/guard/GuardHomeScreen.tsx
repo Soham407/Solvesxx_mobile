@@ -123,6 +123,10 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
       return snapshot;
     }
 
+    if (!profile?.assignedLocation) {
+      throw new Error('Assigned site is missing. Contact admin before using guard operations.');
+    }
+
     const permissions = await requestGeoFencePermissions();
 
     if (!permissions.foregroundGranted) {
@@ -130,7 +134,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     }
 
     const fix = await getCurrentLocationFix();
-    const assignedLocation = profile?.assignedLocation;
+    const assignedLocation = profile.assignedLocation;
 
     let distanceFromAssignedSite: number | null = null;
     let withinGeoFence = true;
