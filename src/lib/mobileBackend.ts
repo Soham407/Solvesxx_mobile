@@ -2,6 +2,7 @@ import { isStagingAutomationEnabled } from './stagingAutomation';
 import { supabase } from './supabase';
 import type { AppUserProfile } from '../types/app';
 import type {
+  GuardAttendanceEntry,
   GuardChecklistItem,
   GuardLocationSnapshot,
   GuardSosType,
@@ -313,6 +314,7 @@ export async function recordGuardAttendanceAction(input: {
   profile: AppUserProfile | null;
   location: GuardLocationSnapshot;
   photoUri: string;
+  fallbackClockInEntry?: GuardAttendanceEntry | null;
 }) {
   const employeeId = input.profile?.employeeId ?? null;
 
@@ -341,9 +343,15 @@ export async function recordGuardAttendanceAction(input: {
   throwIfError(existingError);
 
   const checkInTime =
-    input.action === 'check-in' ? now : typeof existingRow?.check_in_time === 'string' ? existingRow.check_in_time : null;
+    input.action === 'check-in'
+      ? now
+      : typeof existingRow?.check_in_time === 'string'
+        ? existingRow.check_in_time
+        : input.fallbackClockInEntry?.recordedAt ?? null;
   const checkOutTime =
     input.action === 'check-out' ? now : typeof existingRow?.check_out_time === 'string' ? existingRow.check_out_time : null;
+
+  const fallbackClockInLocation = input.fallbackClockInEntry?.location ?? null;
 
   const payload = {
     employee_id: employeeId,
@@ -353,21 +361,27 @@ export async function recordGuardAttendanceAction(input: {
     check_in_location_id:
       input.action === 'check-in'
         ? input.profile?.assignedLocation?.id ?? null
-        : existingRow?.check_in_location_id ?? null,
+        : existingRow?.check_in_location_id ?? input.profile?.assignedLocation?.id ?? null,
     check_out_location_id:
       input.action === 'check-out'
         ? input.profile?.assignedLocation?.id ?? null
         : existingRow?.check_out_location_id ?? null,
     check_in_latitude:
-      input.action === 'check-in' ? input.location.latitude : existingRow?.check_in_latitude ?? null,
+      input.action === 'check-in'
+        ? input.location.latitude
+        : existingRow?.check_in_latitude ?? fallbackClockInLocation?.latitude ?? input.location.latitude,
     check_in_longitude:
-      input.action === 'check-in' ? input.location.longitude : existingRow?.check_in_longitude ?? null,
+      input.action === 'check-in'
+        ? input.location.longitude
+        : existingRow?.check_in_longitude ?? fallbackClockInLocation?.longitude ?? input.location.longitude,
     check_out_latitude:
       input.action === 'check-out' ? input.location.latitude : existingRow?.check_out_latitude ?? null,
     check_out_longitude:
       input.action === 'check-out' ? input.location.longitude : existingRow?.check_out_longitude ?? null,
     check_in_selfie_url:
-      input.action === 'check-in' ? selfiePath : existingRow?.check_in_selfie_url ?? selfiePath,
+      input.action === 'check-in'
+        ? selfiePath
+        : existingRow?.check_in_selfie_url ?? input.fallbackClockInEntry?.photoUri ?? selfiePath,
     total_hours: calculateHourDelta(checkInTime, checkOutTime),
     status: 'present',
   };

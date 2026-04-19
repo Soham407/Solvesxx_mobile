@@ -231,6 +231,8 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
               profile,
               location,
               photoUri: photo.uri,
+              fallbackClockInEntry:
+                attendanceLog.find((entry) => entry.action === 'clock_in') ?? null,
             }),
             await clockOut({
               location,
