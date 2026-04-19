@@ -271,31 +271,59 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
   };
 }
 
-async function fileUriToBlob(uri: string) {
-  const dataUriMatch = uri.match(/^data:([^;]+);base64,(.+)$/);
+function parseDataUri(uri: string) {
+  const match = uri.match(/^data:([^;]+);base64,(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    base64: match[2],
+    contentType: match[1],
+  };
+}
+
+function decodeBase64(base64: string) {
+  const binary = globalThis.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+async function fileUriToUploadBody(uri: string) {
+  const dataUriMatch = parseDataUri(uri);
 
   if (dataUriMatch) {
-    const mimeType = dataUriMatch[1];
-    const base64 = dataUriMatch[2];
-    const binary = globalThis.atob(base64);
-    const bytes = new Uint8Array(binary.length);
-
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-
-    return new Blob([bytes], { type: mimeType });
+    return {
+      body: decodeBase64(dataUriMatch.base64),
+      contentType: dataUriMatch.contentType,
+    };
   }
 
   if (/^https?:\/\//i.test(uri)) {
     const response = await fetch(uri);
-    return response.blob();
+    const blob = await response.blob();
+    return {
+      body: blob,
+      contentType: blob.type || null,
+    };
   }
 
-  return new Promise<Blob>((resolve, reject) => {
+  return new Promise<{ body: Blob; contentType: string | null }>((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.onerror = () => reject(new Error('Profile photo file could not be read.'));
-    request.onload = () => resolve(request.response as Blob);
+    request.onload = () => {
+      const blob = request.response as Blob;
+      resolve({
+        body: blob,
+        contentType: blob.type || null,
+      });
+    };
     request.responseType = 'blob';
     request.open('GET', uri, true);
     request.send();
@@ -333,12 +361,12 @@ export async function uploadProfilePhoto(
 ) {
   const fileExtension = inferFileExtension(uri, mimeType);
   const filePath = `profiles/${employeeId}-${Date.now()}.${fileExtension}`;
-  const fileBody = await fileUriToBlob(uri);
+  const uploadPayload = await fileUriToUploadBody(uri);
 
   const { error: uploadError } = await supabase.storage
     .from('attendance-selfies')
-    .upload(filePath, fileBody, {
-      contentType: mimeType ?? `image/${fileExtension}`,
+    .upload(filePath, uploadPayload.body, {
+      contentType: mimeType ?? uploadPayload.contentType ?? `image/${fileExtension}`,
       upsert: true,
     });
 
