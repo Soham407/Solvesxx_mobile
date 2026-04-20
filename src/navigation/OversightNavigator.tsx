@@ -68,22 +68,22 @@ export function OversightNavigator() {
       <Tab.Screen
         component={OversightHomeScreen}
         name="OversightHome"
-        options={{ title: 'Home' }}
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_oversight_tab_home' }}
       />
       <Tab.Screen
         component={OversightAlertsScreen}
         name="OversightAlerts"
-        options={{ title: 'Alerts' }}
+        options={{ title: 'Alerts', tabBarButtonTestID: 'qa_oversight_tab_alerts' }}
       />
       <Tab.Screen
         component={OversightOperationsScreen}
         name="OversightOperations"
-        options={{ title: 'Ops' }}
+        options={{ title: 'Ops', tabBarButtonTestID: 'qa_oversight_tab_operations' }}
       />
       <Tab.Screen
         component={OversightTicketsScreen}
         name="OversightTickets"
-        options={{ title: 'Tickets' }}
+        options={{ title: 'Tickets', tabBarButtonTestID: 'qa_oversight_tab_tickets' }}
       />
     </Tab.Navigator>
   );

@@ -65,14 +65,26 @@ export function ServiceNavigator() {
         },
       })}
     >
-      <Tab.Screen component={ServiceHomeScreen} name="ServiceHome" options={{ title: 'Home' }} />
-      <Tab.Screen component={ServiceTasksScreen} name="ServiceTasks" options={{ title: 'Tasks' }} />
+      <Tab.Screen
+        component={ServiceHomeScreen}
+        name="ServiceHome"
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_service_tab_home' }}
+      />
+      <Tab.Screen
+        component={ServiceTasksScreen}
+        name="ServiceTasks"
+        options={{ title: 'Tasks', tabBarButtonTestID: 'qa_service_tab_tasks' }}
+      />
       <Tab.Screen
         component={ServiceMaterialsScreen}
         name="ServiceMaterials"
-        options={{ title: 'Materials' }}
+        options={{ title: 'Materials', tabBarButtonTestID: 'qa_service_tab_materials' }}
       />
-      <Tab.Screen component={ServiceProofScreen} name="ServiceProof" options={{ title: 'Proof' }} />
+      <Tab.Screen
+        component={ServiceProofScreen}
+        name="ServiceProof"
+        options={{ title: 'Proof', tabBarButtonTestID: 'qa_service_tab_proof' }}
+      />
     </Tab.Navigator>
   );
 }

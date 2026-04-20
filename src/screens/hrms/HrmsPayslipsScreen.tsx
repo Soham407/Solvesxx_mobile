@@ -66,11 +66,18 @@ export function HrmsPayslipsScreen(_props: HrmsPayslipsScreenProps) {
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Last 12 months</Text>
         </View>
         {payslipsQuery.data?.length ? (
-          payslipsQuery.data.map((item) => (
-            <View key={item.id} style={[styles.payslipRow, { borderColor: colors.border }]}>
+          payslipsQuery.data.map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.payslipRow, { borderColor: colors.border }]}
+              testID={`qa_hrms_payslip_row_${index}`}
+            >
               <View style={styles.summaryRow}>
                 <View style={styles.summaryCopy}>
-                  <Text style={[styles.payslipTitle, { color: colors.foreground }]}>
+                  <Text
+                    style={[styles.payslipTitle, { color: colors.foreground }]}
+                    testID={`qa_hrms_payslip_title_${index}`}
+                  >
                     {formatMonthLabel(item.payPeriodTo)}
                   </Text>
                   <Text style={[styles.copy, { color: colors.mutedForeground }]}>

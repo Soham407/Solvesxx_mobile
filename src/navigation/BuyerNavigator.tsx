@@ -65,10 +65,26 @@ export function BuyerNavigator() {
         },
       })}
     >
-      <Tab.Screen component={BuyerHomeScreen} name="BuyerHome" options={{ title: 'Home' }} />
-      <Tab.Screen component={BuyerRequestsScreen} name="BuyerRequests" options={{ title: 'Requests' }} />
-      <Tab.Screen component={BuyerInvoicesScreen} name="BuyerInvoices" options={{ title: 'Invoices' }} />
-      <Tab.Screen component={BuyerFeedbackScreen} name="BuyerFeedback" options={{ title: 'Feedback' }} />
+      <Tab.Screen
+        component={BuyerHomeScreen}
+        name="BuyerHome"
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_buyer_tab_home' }}
+      />
+      <Tab.Screen
+        component={BuyerRequestsScreen}
+        name="BuyerRequests"
+        options={{ title: 'Requests', tabBarButtonTestID: 'qa_buyer_tab_requests' }}
+      />
+      <Tab.Screen
+        component={BuyerInvoicesScreen}
+        name="BuyerInvoices"
+        options={{ title: 'Invoices', tabBarButtonTestID: 'qa_buyer_tab_invoices' }}
+      />
+      <Tab.Screen
+        component={BuyerFeedbackScreen}
+        name="BuyerFeedback"
+        options={{ title: 'Feedback', tabBarButtonTestID: 'qa_buyer_tab_feedback' }}
+      />
     </Tab.Navigator>
   );
 }

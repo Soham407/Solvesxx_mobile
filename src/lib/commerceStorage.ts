@@ -31,10 +31,18 @@ export async function saveBuyerState(state: BuyerPersistedState) {
   await saveJsonValue(BUYER_STATE_KEY, state);
 }
 
+export async function clearBuyerState() {
+  await AsyncStorage.removeItem(BUYER_STATE_KEY);
+}
+
 export async function loadSupplierState() {
   return loadJsonValue<SupplierPersistedState>(SUPPLIER_STATE_KEY);
 }
 
 export async function saveSupplierState(state: SupplierPersistedState) {
   await saveJsonValue(SUPPLIER_STATE_KEY, state);
+}
+
+export async function clearSupplierState() {
+  await AsyncStorage.removeItem(SUPPLIER_STATE_KEY);
 }

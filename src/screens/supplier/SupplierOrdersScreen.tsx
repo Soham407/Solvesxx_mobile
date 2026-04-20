@@ -96,21 +96,32 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
           </View>
           <Truck color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_supplier_orders_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       <InfoCard>
         {orderedPOs.length ? (
-          orderedPOs.map((po) => (
-            <View key={po.id} style={styles.poCard}>
+          orderedPOs.map((po, index) => (
+            <View key={po.id} style={styles.poCard} testID={`qa_supplier_po_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.poTitle, { color: colors.foreground }]}>{po.poNumber}</Text>
+                  <Text
+                    style={[styles.poTitle, { color: colors.foreground }]}
+                    testID={`qa_supplier_po_title_${index}`}
+                  >
+                    {po.poNumber}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {po.title} | {currencyFormatter.format(po.grandTotalPaise / 100)}
                   </Text>
                 </View>
-                <StatusChip label={po.status.replace(/_/g, ' ')} tone={getStatusTone(po.status)} />
+                <View testID={`qa_supplier_po_status_${index}`}>
+                  <StatusChip label={po.status.replace(/_/g, ' ')} tone={getStatusTone(po.status)} />
+                </View>
               </View>
               <Text style={[styles.caption, { color: colors.foreground }]}>
                 Expected delivery: {formatValue(po.expectedDeliveryDate)}
@@ -128,6 +139,7 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                 <ActionButton
                   label="Acknowledge PO"
                   variant="secondary"
+                  testID={`qa_supplier_po_acknowledge_${index}`}
                   onPress={() => {
                     void acknowledgePO(po.id);
                     setMessage(`${po.poNumber} acknowledged and ready for dispatch planning.`);
@@ -138,6 +150,7 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
               {po.status === 'acknowledged' ? (
                 <View style={styles.dispatchCard}>
                   <FormField
+                    inputTestID={`qa_supplier_po_vehicle_${index}`}
                     label="Vehicle details"
                     onChangeText={(value) =>
                       setVehicleDrafts((state) => ({
@@ -149,6 +162,7 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                     value={vehicleDrafts[po.id] ?? ''}
                   />
                   <FormField
+                    inputTestID={`qa_supplier_po_dispatch_note_${index}`}
                     label="Dispatch note"
                     multiline
                     onChangeText={(value) =>
@@ -165,6 +179,7 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                   <ActionButton
                     label="Dispatch PO"
                     variant="ghost"
+                    testID={`qa_supplier_po_dispatch_${index}`}
                     onPress={() => void handleDispatch(po.id, po.poNumber)}
                   />
                 </View>

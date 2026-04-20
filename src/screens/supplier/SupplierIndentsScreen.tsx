@@ -74,21 +74,32 @@ export function SupplierIndentsScreen(_props: SupplierIndentsScreenProps) {
           </View>
           <PackageCheck color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_supplier_indents_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       <InfoCard>
         {sortedIndents.length ? (
-          sortedIndents.map((indent) => (
-            <View key={indent.id} style={styles.indentCard}>
+          sortedIndents.map((indent, index) => (
+            <View key={indent.id} style={styles.indentCard} testID={`qa_supplier_indent_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.indentTitle, { color: colors.foreground }]}>{indent.title}</Text>
+                  <Text
+                    style={[styles.indentTitle, { color: colors.foreground }]}
+                    testID={`qa_supplier_indent_title_${index}`}
+                  >
+                    {indent.title}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {indent.requestNumber} | {indent.categoryLabel} | {indent.locationName}
                   </Text>
                 </View>
-                <StatusChip label={indent.status.replace(/_/g, ' ')} tone={getStatusTone(indent.status)} />
+                <View testID={`qa_supplier_indent_status_${index}`}>
+                  <StatusChip label={indent.status.replace(/_/g, ' ')} tone={getStatusTone(indent.status)} />
+                </View>
               </View>
               <Text style={[styles.caption, { color: colors.foreground }]}>
                 Preferred delivery: {formatValue(indent.preferredDeliveryDate)}
@@ -101,6 +112,7 @@ export function SupplierIndentsScreen(_props: SupplierIndentsScreenProps) {
                   <ActionButton
                     label="Accept indent"
                     variant="secondary"
+                    testID={`qa_supplier_indent_accept_${index}`}
                     onPress={() => {
                       void respondToIndent(indent.id, 'accept');
                       setMessage(`${indent.requestNumber} accepted and moved to PO generation.`);
@@ -109,6 +121,7 @@ export function SupplierIndentsScreen(_props: SupplierIndentsScreenProps) {
                   <ActionButton
                     label="Reject indent"
                     variant="ghost"
+                    testID={`qa_supplier_indent_reject_${index}`}
                     onPress={() => {
                       void respondToIndent(indent.id, 'reject');
                       setMessage(`${indent.requestNumber} rejected from the supplier desk.`);

@@ -32,6 +32,7 @@ export function HRMSNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => <House color={color} size={size} />,
           tabBarLabel: 'Home',
+          tabBarButtonTestID: 'qa_hrms_tab_home',
         }}
       />
       <Tab.Screen
@@ -40,6 +41,7 @@ export function HRMSNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => <ShieldCheck color={color} size={size} />,
           tabBarLabel: 'Attendance',
+          tabBarButtonTestID: 'qa_hrms_tab_attendance',
         }}
       />
       <Tab.Screen
@@ -48,6 +50,7 @@ export function HRMSNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => <CalendarDays color={color} size={size} />,
           tabBarLabel: 'Leave',
+          tabBarButtonTestID: 'qa_hrms_tab_leave',
         }}
       />
       <Tab.Screen
@@ -56,6 +59,7 @@ export function HRMSNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => <WalletCards color={color} size={size} />,
           tabBarLabel: 'Payslips',
+          tabBarButtonTestID: 'qa_hrms_tab_payslips',
         }}
       />
       <Tab.Screen
@@ -64,6 +68,7 @@ export function HRMSNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => <FileText color={color} size={size} />,
           tabBarLabel: 'Documents',
+          tabBarButtonTestID: 'qa_hrms_tab_documents',
         }}
       />
     </Tab.Navigator>

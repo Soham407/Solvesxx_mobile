@@ -289,18 +289,32 @@ export async function registerForDeviceNotifications() {
 
   const current = await Notifications.getPermissionsAsync();
   const currentStatus = normalizePermissionStatus(current.status);
+  console.log('[push] current notification permission', {
+    iosStatus: current.ios?.status,
+    status: current.status,
+    normalized: currentStatus,
+  });
 
   let finalStatus = currentStatus;
 
   if (currentStatus !== 'granted') {
     const requested = await Notifications.requestPermissionsAsync();
     finalStatus = normalizePermissionStatus(requested.status);
+    console.log('[push] requested notification permission', {
+      iosStatus: requested.ios?.status,
+      status: requested.status,
+      normalized: finalStatus,
+    });
   }
 
   const platform: NotificationPlatform =
     Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : 'unknown';
 
   if (finalStatus !== 'granted') {
+    console.log('[push] notification permission not granted', {
+      permissionStatus: finalStatus,
+      platform,
+    });
     return {
       permissionStatus: finalStatus,
       token: null,
@@ -310,10 +324,17 @@ export async function registerForDeviceNotifications() {
 
   try {
     const deviceToken = await Notifications.getDevicePushTokenAsync();
+    const resolvedToken = typeof deviceToken.data === 'string' ? deviceToken.data : null;
+    console.log('[push] device push token fetched', {
+      deviceTokenType: deviceToken.type,
+      hasToken: Boolean(resolvedToken),
+      platform,
+      tokenPreview: resolvedToken ? `${resolvedToken.slice(0, 12)}...` : null,
+    });
 
     return {
       permissionStatus: finalStatus,
-      token: typeof deviceToken.data === 'string' ? deviceToken.data : null,
+      token: resolvedToken,
       platform:
         deviceToken.type === 'ios'
           ? 'ios'
@@ -321,7 +342,8 @@ export async function registerForDeviceNotifications() {
             ? 'android'
             : platform,
     };
-  } catch {
+  } catch (error) {
+    console.error('[push] getDevicePushTokenAsync failed', error);
     return {
       permissionStatus: finalStatus,
       token: null,
@@ -499,10 +521,21 @@ export async function persistRemoteDeviceToken(
   platform: NotificationPlatform,
 ) {
   if (!profile?.userId || !token || isPreviewProfile(profile)) {
+    console.log('[push] persistRemoteDeviceToken skipped', {
+      hasProfile: Boolean(profile?.userId),
+      isPreview: isPreviewProfile(profile),
+      hasToken: Boolean(token),
+      platform,
+    });
     return false;
   }
 
   try {
+    console.log('[push] persistRemoteDeviceToken rpc start', {
+      platform,
+      tokenPreview: `${token.slice(0, 12)}...`,
+      userId: profile.userId,
+    });
     const { error } = await supabase.rpc('upsert_push_token', {
       p_device_type: platform,
       p_token: token,
@@ -510,15 +543,31 @@ export async function persistRemoteDeviceToken(
     });
 
     if (error) {
+      console.error('[push] upsert_push_token failed', error);
       throw error;
     }
 
+    console.log('[push] upsert_push_token success', {
+      userId: profile.userId,
+      platform,
+    });
     return true;
-  } catch {
+  } catch (rpcError) {
     try {
+      console.log('[push] falling back to user preferences update', {
+        userId: profile.userId,
+        platform,
+      });
       await updateUserNotificationPreference(profile.userId, profile.role, token, platform);
+      console.log('[push] user preferences update success', {
+        userId: profile.userId,
+      });
       return true;
-    } catch {
+    } catch (fallbackError) {
+      console.error('[push] persistRemoteDeviceToken failed completely', {
+        fallbackError,
+        rpcError,
+      });
       return false;
     }
   }

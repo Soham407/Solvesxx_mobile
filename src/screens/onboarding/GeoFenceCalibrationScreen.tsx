@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MapPin, Navigation } from 'lucide-react-native';
+import * as Location from 'expo-location';
 
 import { ActionButton } from '../../components/shared/ActionButton';
 import { InfoCard } from '../../components/shared/InfoCard';
@@ -15,6 +16,7 @@ import {
   type GeoPermissionState,
 } from '../../lib/location';
 import { fetchCompanyLocations } from '../../lib/profile';
+import { isStagingAutomationEnabled, isStagingAutomationProfile } from '../../lib/stagingAutomation';
 import { useAppStore } from '../../store/useAppStore';
 
 export function GeoFenceCalibrationScreen() {
@@ -84,6 +86,21 @@ export function GeoFenceCalibrationScreen() {
     setErrorMessage(null);
 
     try {
+      if (isStagingAutomationEnabled() && isStagingAutomationProfile(profile) && selectedLocation) {
+        setPermissionState({
+          foregroundGranted: true,
+          foregroundStatus: Location.PermissionStatus.GRANTED,
+          backgroundGranted: true,
+          backgroundStatus: Location.PermissionStatus.GRANTED,
+          canAskAgain: false,
+        });
+        setCurrentPosition({
+          latitude: selectedLocation.latitude ?? 19.076,
+          longitude: selectedLocation.longitude ?? 72.8777,
+        });
+        return;
+      }
+
       const nextPermissions = await requestGeoFencePermissions();
       setPermissionState(nextPermissions);
 
@@ -147,17 +164,24 @@ export function GeoFenceCalibrationScreen() {
         <View style={styles.footer}>
           <ActionButton
             label={currentPosition ? 'Refresh live location' : 'Grant access and locate me'}
+            testID="qa_onboarding_geo_refresh"
             loading={isRequestingLocation}
             onPress={() => void handleRefreshLocation()}
           />
           <ActionButton
             label="Complete calibration"
+            testID="qa_onboarding_geo_complete"
             loading={isSaving}
             disabled={!canComplete}
             onPress={() => void handleComplete()}
           />
           {permissionState && (!permissionState.canAskAgain || !permissionState.foregroundGranted) ? (
-            <ActionButton label="Open device settings" variant="ghost" onPress={() => void Linking.openSettings()} />
+            <ActionButton
+              label="Open device settings"
+              testID="qa_onboarding_geo_settings"
+              variant="ghost"
+              onPress={() => void Linking.openSettings()}
+            />
           ) : null}
         </View>
       }

@@ -117,21 +117,32 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
           </View>
           <ClipboardList color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_service_tasks_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       <InfoCard>
         {orderedTasks.length ? (
-          orderedTasks.map((task) => (
-            <View key={task.id} style={styles.taskCard}>
+          orderedTasks.map((task, index) => (
+            <View key={task.id} style={styles.taskCard} testID={`qa_service_task_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.taskTitle, { color: colors.foreground }]}>{task.title}</Text>
+                  <Text
+                    style={[styles.taskTitle, { color: colors.foreground }]}
+                    testID={`qa_service_task_title_${index}`}
+                  >
+                    {task.title}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {task.referenceCode} | {task.locationName}
                   </Text>
                 </View>
-                <StatusChip label={task.status.replace(/_/g, ' ')} tone={getStatusTone(task.status)} />
+                <View testID={`qa_service_task_status_${index}`}>
+                  <StatusChip label={task.status.replace(/_/g, ' ')} tone={getStatusTone(task.status)} />
+                </View>
               </View>
               <Text style={[styles.caption, { color: colors.foreground }]}>{task.description}</Text>
               <Text style={[styles.caption, { color: colors.mutedForeground }]}>
@@ -156,6 +167,7 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
                 <ActionButton
                   label={task.taskType === 'delivery' ? 'Mark picked up' : 'Start work'}
                   variant="secondary"
+                  testID={`qa_service_task_start_${index}`}
                   onPress={() => void handleStart(task)}
                 />
               ) : null}
@@ -164,6 +176,7 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
                 <ActionButton
                   label="Mark in transit"
                   variant="ghost"
+                  testID={`qa_service_task_in_transit_${index}`}
                   onPress={() => void handleAdvanceDelivery(task)}
                 />
               ) : null}
@@ -172,6 +185,7 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
                 <ActionButton
                   label="Mark delivered"
                   variant="ghost"
+                  testID={`qa_service_task_delivered_${index}`}
                   onPress={() => void handleAdvanceDelivery(task)}
                 />
               ) : null}
@@ -180,6 +194,7 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
                 <ActionButton
                   label="Complete task"
                   variant="ghost"
+                  testID={`qa_service_task_complete_${index}`}
                   onPress={() => void handleComplete(task)}
                 />
               ) : null}

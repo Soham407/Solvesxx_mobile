@@ -118,7 +118,11 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>
           Total billed value in this mobile preview: {currencyFormatter.format(totalAmount / 100)}.
         </Text>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_buyer_invoices_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       <InfoCard>
@@ -151,6 +155,7 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
               ) : null}
               <FormField
                 helperText="Optional note while raising a dispute."
+                inputTestID={`qa_buyer_invoice_dispute_note_${invoice.id}`}
                 label="Dispute note"
                 onChangeText={(value) =>
                   setDisputeDrafts((state) => ({
@@ -164,6 +169,7 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
               <View style={styles.actionGroup}>
                 <ActionButton
                   label="Acknowledge"
+                  testID={`qa_buyer_invoice_acknowledge_${invoice.id}`}
                   variant="secondary"
                   disabled={invoice.status !== 'sent'}
                   onPress={() => {
@@ -173,6 +179,7 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
                 />
                 <ActionButton
                   label="Raise dispute"
+                  testID={`qa_buyer_invoice_dispute_${invoice.id}`}
                   variant="ghost"
                   disabled={invoice.status === 'disputed'}
                   onPress={() => {

@@ -26,6 +26,7 @@ export function ScreenShell({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
+        style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -47,7 +48,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing['2xl'] + Spacing.xl,
     paddingVertical: Spacing.lg,
     gap: Spacing.xl,
   },

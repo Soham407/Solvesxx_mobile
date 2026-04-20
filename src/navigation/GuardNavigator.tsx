@@ -35,6 +35,9 @@ export function GuardNavigator() {
       initialRouteName="GuardHome"
       screenOptions={({ route }) => ({
         headerShown: false,
+        sceneStyle: {
+          backgroundColor: colors.background,
+        },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
@@ -65,21 +68,25 @@ export function GuardNavigator() {
         },
       })}
     >
-      <Tab.Screen component={GuardHomeScreen} name="GuardHome" options={{ title: 'Home' }} />
+      <Tab.Screen
+        component={GuardHomeScreen}
+        name="GuardHome"
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_guard_tab_home' }}
+      />
       <Tab.Screen
         component={GuardChecklistScreen}
         name="GuardChecklist"
-        options={{ title: 'Checklist' }}
+        options={{ title: 'Checklist', tabBarButtonTestID: 'qa_guard_tab_checklist' }}
       />
       <Tab.Screen
         component={GuardVisitorsScreen}
         name="GuardVisitors"
-        options={{ title: 'Visitors' }}
+        options={{ title: 'Visitors', tabBarButtonTestID: 'qa_guard_tab_visitors' }}
       />
       <Tab.Screen
         component={GuardContactsScreen}
         name="GuardContacts"
-        options={{ title: 'Contacts' }}
+        options={{ title: 'Contacts', tabBarButtonTestID: 'qa_guard_tab_contacts' }}
       />
     </Tab.Navigator>
   );

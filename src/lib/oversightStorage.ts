@@ -21,3 +21,7 @@ export async function loadOversightState() {
 export async function saveOversightState(state: OversightPersistedState) {
   await AsyncStorage.setItem(OVERSIGHT_STATE_KEY, JSON.stringify(state));
 }
+
+export async function clearOversightState() {
+  await AsyncStorage.removeItem(OVERSIGHT_STATE_KEY);
+}

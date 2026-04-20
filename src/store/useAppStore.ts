@@ -2,8 +2,13 @@ import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { signOut as signOutRequest } from '../lib/auth';
+import { clearBuyerState, clearSupplierState } from '../lib/commerceStorage';
 import { getBiometricCapability, type BiometricCapability } from '../lib/biometrics';
+import { clearGuardState } from '../lib/guardStorage';
+import { clearHrmsPreviewState } from '../lib/hrms';
+import { clearOversightState } from '../lib/oversightStorage';
 import { fetchCurrentAppProfile, saveGeoCalibrationToProfile } from '../lib/profile';
+import { clearServiceState } from '../lib/serviceStorage';
 import {
   clearLastActivityAt,
   loadLastActivityAt,
@@ -295,6 +300,35 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   enterDevPreview: async (role = 'security_guard') => {
+    if (role === 'security_guard') {
+      await clearGuardState();
+    }
+
+    if (role === 'buyer') {
+      await clearBuyerState();
+    }
+
+    if (role === 'supplier' || role === 'vendor') {
+      await clearSupplierState();
+    }
+
+    if (role === 'employee') {
+      await clearHrmsPreviewState('dev-preview-employee');
+    }
+
+    if (role === 'security_supervisor' || role === 'society_manager') {
+      await clearOversightState();
+    }
+
+    if (
+      role === 'ac_technician' ||
+      role === 'pest_control_technician' ||
+      role === 'delivery_boy' ||
+      role === 'service_boy'
+    ) {
+      await clearServiceState();
+    }
+
     const session = createDevPreviewSession(role);
     const profile = createDevPreviewProfile(session, role);
     const geoCalibration = createDevPreviewGeoCalibration();

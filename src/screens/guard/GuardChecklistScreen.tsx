@@ -105,6 +105,22 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
   );
 
   const progress = checklistItems.length ? (completedCount / checklistItems.length) * 100 : 0;
+  const orderedChecklistItems = useMemo(() => {
+    return [...checklistItems].sort((left, right) => {
+      const leftPriority = left.requiredEvidence ? 0 : 1;
+      const rightPriority = right.requiredEvidence ? 0 : 1;
+
+      if (left.status !== right.status) {
+        return left.status === 'pending' ? -1 : 1;
+      }
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
+
+      return left.title.localeCompare(right.title);
+    });
+  }, [checklistItems]);
 
   const updateRemoteDraftItem = (itemId: string, updater: (item: GuardChecklistItem) => GuardChecklistItem) => {
     setDraftItems((current) =>
@@ -245,7 +261,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
     <ScreenShell
       eyebrow="Daily Operations"
       title="Guard Checklist"
-      description="Complete the daily checklist using backend-owned master items, attach evidence where required, and lock the response once the shift is verified."
+      description="Complete the shift checklist, attach proof where needed, and lock it once the round is finished."
       footer={
         <ActionButton
           label={
@@ -271,7 +287,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
             </Text>
           </View>
           <StatusChip
-            label={checklistSubmittedAt ? 'Locked' : usePreviewFlow ? 'Offline-safe' : 'Backend linked'}
+            label={checklistSubmittedAt ? 'Locked' : usePreviewFlow ? 'Preview mode' : 'In progress'}
             tone={checklistSubmittedAt ? 'success' : usePreviewFlow ? 'warning' : 'info'}
           />
         </View>
@@ -288,7 +304,14 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         ) : null}
       </InfoCard>
 
-      {checklistItems.map((item, index) => (
+      <InfoCard>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>How to finish this round</Text>
+        <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+          Finish the pending items first. If a task asks for photo proof, capture it before marking the task complete.
+        </Text>
+      </InfoCard>
+
+      {orderedChecklistItems.map((item, index) => (
         <InfoCard key={item.id}>
           <Pressable
             disabled={Boolean(checklistSubmittedAt) || item.inputType === 'numeric'}
@@ -332,11 +355,11 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
               tone={item.status === 'completed' ? 'success' : 'default'}
             />
             <StatusChip
-              label={item.requiredEvidence ? 'Photo proof required' : 'Visual check'}
+              label={item.requiredEvidence ? 'Required' : 'Routine'}
               tone={item.requiredEvidence ? 'warning' : 'info'}
             />
             <StatusChip
-              label={item.inputType === 'numeric' ? 'Numeric entry' : 'Yes / no'}
+              label={item.inputType === 'numeric' ? 'Reading' : 'Check'}
               tone={item.inputType === 'numeric' ? 'info' : 'default'}
             />
           </View>
@@ -393,8 +416,8 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
             <Camera color={colors.info} size={16} />
             <Text style={[styles.evidenceText, { color: colors.foreground }]}>
               {item.evidenceUri
-                ? 'Evidence is attached and will be uploaded during checklist submission.'
-                : 'Use the back camera to attach a work-proof image.'}
+                ? 'Photo proof is attached and will be uploaded when this checklist is submitted.'
+                : 'Use the back camera to attach proof if this task needs an image.'}
             </Text>
           </View>
         </InfoCard>

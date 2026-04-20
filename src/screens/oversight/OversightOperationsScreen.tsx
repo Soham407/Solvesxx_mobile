@@ -142,12 +142,17 @@ export function OversightOperationsScreen(_props: OversightOperationsScreenProps
             tone={attendanceExceptions ? 'warning' : 'success'}
           />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_oversight_operations_message">
+            {message}
+          </Text>
+        ) : null}
         <View style={styles.actionRow}>
           <ActionButton
             label={isRefreshing ? 'Refreshing...' : 'Refresh board'}
             loading={isRefreshing}
             onPress={() => void handleRefresh()}
+            testID="qa_oversight_refresh_board"
           />
         </View>
       </InfoCard>
@@ -192,16 +197,16 @@ export function OversightOperationsScreen(_props: OversightOperationsScreenProps
 
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Checklist board</Text>
-        {guards.length ? guards.map((guard) => {
+        {guards.length ? guards.map((guard, index) => {
           const progress = guard.checklistTotal
             ? Math.round((guard.checklistCompleted / guard.checklistTotal) * 100)
             : 0;
 
           return (
-            <View key={guard.id} style={styles.recordCard}>
+            <View key={guard.id} style={styles.recordCard} testID={`qa_oversight_guard_row_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.recordTitle, { color: colors.foreground }]}>
+                  <Text style={[styles.recordTitle, { color: colors.foreground }]} testID={`qa_oversight_guard_title_${index}`}>
                     {guard.guardName} ({guard.guardCode})
                   </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>

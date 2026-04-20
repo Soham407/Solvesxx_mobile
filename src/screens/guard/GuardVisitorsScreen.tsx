@@ -54,6 +54,22 @@ function formatApprovalCountdown(value: string | null) {
   return `${minutes}:${String(seconds).padStart(2, '0')} approval window`;
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 const EMPTY_FORM = {
   name: '',
   phone: '',
@@ -149,7 +165,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
 
       setPhotoUri(asset.uri);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not capture the visitor photo.');
+      setMessage(getErrorMessage(error, 'Could not capture the visitor photo.'));
     }
   };
 
@@ -211,6 +227,10 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
         await queryClient.invalidateQueries({
           queryKey: ['guard', 'visitors', profile?.userId],
         });
+        await queryClient.fetchQuery({
+          queryKey: ['guard', 'visitors', profile?.userId],
+          queryFn: () => fetchGuardVisitors(true),
+        });
 
         setMessage('Visitor logged and resident approval has been triggered.');
       }
@@ -220,7 +240,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
       setSelectedDestination(null);
       setPhotoUri(null);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Visitor entry could not be saved.');
+      setMessage(getErrorMessage(error, 'Visitor entry could not be saved.'));
     } finally {
       setIsSaving(false);
     }
@@ -250,7 +270,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
         setMessage('Visitor checked out successfully.');
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Visitor checkout failed.');
+      setMessage(getErrorMessage(error, 'Visitor checkout failed.'));
     } finally {
       setBusyVisitorId(null);
     }
@@ -260,11 +280,12 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
     <ScreenShell
       eyebrow="Gate Entry"
       title="Visitor Logging"
-      description="Capture walk-ins, link them to the correct flat, and keep a live record of who is currently inside the premises."
+      description="Register visitors quickly, link them to the correct flat, and keep track of who is still inside."
       footer={
         <ActionButton
           label={isSaving ? 'Logging visitor...' : 'Log visitor entry'}
           loading={isSaving}
+          testID="qa_guard_save_visitor"
           onPress={() => void handleSaveVisitor()}
         />
       }
@@ -283,6 +304,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                 <Pressable
                   key={template.id}
                   onPress={() => handleUseTemplate(template)}
+                  testID={`qa_guard_frequent_visitor_${template.id}`}
                   style={[
                     styles.templateChip,
                     {
@@ -310,17 +332,18 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
         <InfoCard>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Resident lookup</Text>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-            Search by building, flat, or resident name so the app can send a live approval request to the correct household.
+            Start with the flat or resident so the approval request goes to the right household the first time.
           </Text>
           {destinationsQuery.data?.length ? (
             <View style={styles.destinationWrap}>
-              {destinationsQuery.data.slice(0, 5).map((destination) => {
+              {destinationsQuery.data.slice(0, 5).map((destination, index) => {
                 const isSelected = destination.flatId === selectedDestination?.flatId;
 
                 return (
                   <Pressable
                     key={destination.flatId}
                     onPress={() => handleDestinationPick(destination)}
+                    testID={`qa_guard_destination_result_${index}`}
                     style={[
                       styles.destinationCard,
                       {
@@ -335,6 +358,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                         size={16}
                       />
                       <Text
+                        testID={`qa_guard_destination_title_${index}`}
                         style={[
                           styles.destinationTitle,
                           {
@@ -346,6 +370,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                       </Text>
                     </View>
                     <Text
+                      testID={`qa_guard_destination_subtitle_${index}`}
                       style={[
                         styles.caption,
                         {
@@ -370,27 +395,12 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
 
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>New visitor entry</Text>
-        <FormField
-          label="Visitor name"
-          onChangeText={(value) => setForm((state) => ({ ...state, name: value }))}
-          placeholder="Enter full name"
-          value={form.name}
-        />
-        <FormField
-          keyboardType="phone-pad"
-          label="Phone number"
-          onChangeText={(value) => setForm((state) => ({ ...state, phone: value }))}
-          placeholder="98765 43210"
-          value={form.phone}
-        />
-        <FormField
-          label="Purpose of visit"
-          onChangeText={(value) => setForm((state) => ({ ...state, purpose: value }))}
-          placeholder="Delivery, maintenance, guest visit"
-          value={form.purpose}
-        />
+        <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+          Follow this order: identify the destination, confirm the visitor details, then capture a face photo.
+        </Text>
         <FormField
           label={usePreviewFlow ? 'Destination' : 'Resident / flat search'}
+          inputTestID="qa_guard_visitor_destination"
           onChangeText={(value) => {
             setSelectedDestination(null);
             setForm((state) => ({ ...state, destination: value }));
@@ -399,7 +409,30 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
           value={form.destination}
         />
         <FormField
+          label="Visitor name"
+          inputTestID="qa_guard_visitor_name"
+          onChangeText={(value) => setForm((state) => ({ ...state, name: value }))}
+          placeholder="Enter full name"
+          value={form.name}
+        />
+        <FormField
+          keyboardType="phone-pad"
+          label="Phone number"
+          inputTestID="qa_guard_visitor_phone"
+          onChangeText={(value) => setForm((state) => ({ ...state, phone: value }))}
+          placeholder="98765 43210"
+          value={form.phone}
+        />
+        <FormField
+          label="Purpose of visit"
+          inputTestID="qa_guard_visitor_purpose"
+          onChangeText={(value) => setForm((state) => ({ ...state, purpose: value }))}
+          placeholder="Delivery, maintenance, guest visit"
+          value={form.purpose}
+        />
+        <FormField
           label="Vehicle number"
+          inputTestID="qa_guard_visitor_vehicle"
           onChangeText={(value) => setForm((state) => ({ ...state, vehicleNumber: value }))}
           placeholder="Optional"
           value={form.vehicleNumber}
@@ -419,17 +452,22 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
           <ActionButton
             label={photoUri ? 'Retake visitor photo' : 'Capture visitor photo'}
             variant="secondary"
+            testID="qa_guard_capture_visitor_photo"
             onPress={() => void handleCapturePhoto()}
           />
         </View>
 
-        {message ? <Text style={[styles.message, { color: colors.primary }]}>{message}</Text> : null}
-        <StatusChip
-          label={
-            usePreviewFlow ? 'Offline-safe entry logging' : 'Live resident approval flow'
-          }
-          tone={usePreviewFlow ? 'warning' : 'info'}
-        />
+        {message ? (
+          <Text style={[styles.message, { color: colors.primary }]} testID="qa_guard_visitors_message">
+            {message}
+          </Text>
+        ) : null}
+        {selectedDestination ? (
+          <StatusChip
+            label={`Approval will be sent to ${selectedDestination.flatLabel}`}
+            tone="info"
+          />
+        ) : usePreviewFlow ? <StatusChip label="Preview mode" tone="warning" /> : null}
       </InfoCard>
 
       <InfoCard>
@@ -438,11 +476,15 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
           <StatusChip label={`${insideVisitors.length} active`} tone="success" />
         </View>
         {insideVisitors.length ? (
-          insideVisitors.map((visitor) => {
+          insideVisitors.map((visitor, index) => {
             const countdown = formatApprovalCountdown(visitor.approvalDeadlineAt);
 
             return (
-              <View key={visitor.id} style={[styles.visitorRow, { borderColor: colors.border }]}>
+              <View
+                key={visitor.id}
+                style={[styles.visitorRow, { borderColor: colors.border }]}
+                testID={`qa_guard_visitor_row_${index}`}
+              >
                 <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
                   {visitor.photoUrl || visitor.photoUri ? (
                     <Image
@@ -454,7 +496,12 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                   )}
                 </View>
                 <View style={styles.visitorCopy}>
-                  <Text style={[styles.visitorName, { color: colors.foreground }]}>{visitor.name}</Text>
+                  <Text
+                    style={[styles.visitorName, { color: colors.foreground }]}
+                    testID={`qa_guard_visitor_name_${index}`}
+                  >
+                    {visitor.name}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {visitor.destination} | {visitor.purpose}
                   </Text>
@@ -494,6 +541,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                   label={busyVisitorId === visitor.id ? 'Saving...' : 'Check out'}
                   variant="ghost"
                   disabled={busyVisitorId === visitor.id}
+                  testID={`qa_guard_checkout_visitor_${index}`}
                   onPress={() => void handleCheckout(visitor.id)}
                 />
               </View>

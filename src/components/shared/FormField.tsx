@@ -8,15 +8,25 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 interface FormFieldProps extends TextInputProps {
   label: string;
   helperText?: string;
+  inputTestID?: string;
+  inputAccessibilityLabel?: string;
 }
 
-export function FormField({ label, helperText, style, ...inputProps }: FormFieldProps) {
+export function FormField({
+  label,
+  helperText,
+  style,
+  inputTestID,
+  inputAccessibilityLabel,
+  ...inputProps
+}: FormFieldProps) {
   const { colors } = useAppTheme();
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: colors.foreground }]}>{label}</Text>
       <TextInput
+        accessibilityLabel={inputAccessibilityLabel ?? label}
         placeholderTextColor={colors.mutedForeground}
         selectionColor={colors.primary}
         style={[
@@ -28,6 +38,7 @@ export function FormField({ label, helperText, style, ...inputProps }: FormField
           },
           style,
         ]}
+        testID={inputTestID}
         {...inputProps}
       />
       {helperText ? <Text style={[styles.helperText, { color: colors.mutedForeground }]}>{helperText}</Text> : null}

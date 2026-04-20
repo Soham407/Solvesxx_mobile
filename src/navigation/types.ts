@@ -2,6 +2,7 @@ import type { AppRole } from '../types/app';
 
 export type AuthStackParamList = {
   Login: undefined;
+  EmailLogin: undefined;
   OTP: { phone: string };
 };
 

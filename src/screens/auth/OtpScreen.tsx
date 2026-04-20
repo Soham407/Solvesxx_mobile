@@ -84,12 +84,14 @@ export function OtpScreen({ navigation, route }: OtpScreenProps) {
         <View style={styles.footer}>
           <ActionButton
             label="Verify and continue"
+            testID="qa_otp_verify_button"
             loading={isVerifying}
             disabled={otpCode.trim().length !== 6}
             onPress={handleVerify}
           />
           <ActionButton
             label={isResending ? 'Resending...' : 'Resend OTP'}
+            testID="qa_otp_resend_button"
             variant="ghost"
             disabled={isResending}
             onPress={handleResend}
@@ -101,6 +103,7 @@ export function OtpScreen({ navigation, route }: OtpScreenProps) {
         <FormField
           autoFocus
           helperText="The code expires quickly, so use the latest SMS if you requested multiple OTPs."
+          inputTestID="qa_otp_code_input"
           keyboardType="number-pad"
           label="6-digit OTP"
           maxLength={6}
@@ -113,6 +116,7 @@ export function OtpScreen({ navigation, route }: OtpScreenProps) {
         ) : null}
         <Pressable
           onPress={() => navigation.goBack()}
+          testID="qa_otp_change_mobile_number"
           style={[styles.backLink, { borderColor: colors.border }]}
         >
           <Text style={[styles.backLinkText, { color: colors.foreground }]}>Change mobile number</Text>

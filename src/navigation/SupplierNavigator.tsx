@@ -65,10 +65,26 @@ export function SupplierNavigator() {
         },
       })}
     >
-      <Tab.Screen component={SupplierHomeScreen} name="SupplierHome" options={{ title: 'Home' }} />
-      <Tab.Screen component={SupplierIndentsScreen} name="SupplierIndents" options={{ title: 'Indents' }} />
-      <Tab.Screen component={SupplierOrdersScreen} name="SupplierOrders" options={{ title: 'Orders' }} />
-      <Tab.Screen component={SupplierBillingScreen} name="SupplierBilling" options={{ title: 'Billing' }} />
+      <Tab.Screen
+        component={SupplierHomeScreen}
+        name="SupplierHome"
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_supplier_tab_home' }}
+      />
+      <Tab.Screen
+        component={SupplierIndentsScreen}
+        name="SupplierIndents"
+        options={{ title: 'Indents', tabBarButtonTestID: 'qa_supplier_tab_indents' }}
+      />
+      <Tab.Screen
+        component={SupplierOrdersScreen}
+        name="SupplierOrders"
+        options={{ title: 'Orders', tabBarButtonTestID: 'qa_supplier_tab_orders' }}
+      />
+      <Tab.Screen
+        component={SupplierBillingScreen}
+        name="SupplierBilling"
+        options={{ title: 'Billing', tabBarButtonTestID: 'qa_supplier_tab_billing' }}
+      />
     </Tab.Navigator>
   );
 }

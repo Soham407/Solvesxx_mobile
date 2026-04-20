@@ -97,6 +97,7 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
           label="Submit leave request"
           loading={leaveMutation.isPending}
           onPress={() => leaveMutation.mutate()}
+          testID="qa_hrms_submit_leave"
         />
       }
     >
@@ -109,6 +110,7 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
           {leaveQuery.data?.leaveTypes.map((item) => (
             <Pressable
               key={item.id}
+              testID={`qa_hrms_leave_type_${item.code}`}
               onPress={() => setSelectedLeaveTypeId(item.id)}
               style={[
                 styles.balanceChip,
@@ -136,6 +138,7 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
         </Text>
         <FormField
           helperText={selectedType ? `${selectedType.remainingDays} day(s) remaining.` : undefined}
+          inputTestID="qa_hrms_leave_start_date"
           label="Start date"
           onChangeText={setFromDate}
           placeholder="2026-04-10"
@@ -143,6 +146,7 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
         />
         <FormField
           helperText={requestedDays > 0 ? `${requestedDays} day(s) requested.` : undefined}
+          inputTestID="qa_hrms_leave_end_date"
           label="End date"
           onChangeText={setToDate}
           placeholder="2026-04-12"
@@ -150,6 +154,7 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
         />
         <FormField
           helperText="This note is shown to the reporting supervisor."
+          inputTestID="qa_hrms_leave_reason"
           label="Reason"
           multiline
           numberOfLines={4}
@@ -172,21 +177,36 @@ export function HrmsLeaveScreen(_props: HrmsLeaveScreenProps) {
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Request history</Text>
         </View>
         {leaveQuery.data?.applications.length ? (
-          leaveQuery.data.applications.map((item) => (
-            <View key={item.id} style={[styles.requestRow, { borderColor: colors.border }]}>
+          leaveQuery.data.applications.map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.requestRow, { borderColor: colors.border }]}
+              testID={`qa_hrms_leave_request_row_${index}`}
+            >
               <View style={styles.requestCopy}>
-                <Text style={[styles.requestTitle, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.requestTitle, { color: colors.foreground }]}
+                  testID={`qa_hrms_leave_request_title_${index}`}
+                >
                   {item.leaveTypeName}
                 </Text>
                 <Text style={[styles.helperCopy, { color: colors.mutedForeground }]}>
                   {formatDateLabel(item.fromDate)} to {formatDateLabel(item.toDate)} | {item.numberOfDays} day(s)
                 </Text>
-                <Text style={[styles.helperCopy, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.helperCopy, { color: colors.mutedForeground }]}
+                  testID={`qa_hrms_leave_request_reason_${index}`}
+                >
                   {item.reason}
                 </Text>
               </View>
               <View style={styles.requestMeta}>
-                <Text style={[styles.statusText, { color: colors.foreground }]}>{item.status}</Text>
+                <Text
+                  style={[styles.statusText, { color: colors.foreground }]}
+                  testID={`qa_hrms_leave_request_status_${index}`}
+                >
+                  {item.status}
+                </Text>
                 <Text style={[styles.syncText, { color: colors.info }]}>
                   {item.syncStatus === 'synced'
                     ? 'Synced'

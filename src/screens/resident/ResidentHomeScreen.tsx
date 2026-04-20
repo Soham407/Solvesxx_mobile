@@ -7,13 +7,15 @@ import { BellRing, Clock3, DoorOpen } from 'lucide-react-native';
 import { MetricCard } from '../../components/guard/MetricCard';
 import { ActionButton } from '../../components/shared/ActionButton';
 import { InfoCard } from '../../components/shared/InfoCard';
+import { PreviewModeBanner } from '../../components/shared/PreviewModeBanner';
 import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { fetchResidentPendingVisitors } from '../../lib/mobileBackend';
+import { fetchResidentPendingVisitors, isPreviewProfile } from '../../lib/mobileBackend';
 import type { ResidentTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
+import { useGuardStore } from '../../store/useGuardStore';
 
 type ResidentHomeScreenProps = BottomTabScreenProps<ResidentTabParamList, 'ResidentHome'>;
 
@@ -31,30 +33,46 @@ function formatTime(value: string | null) {
 export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
+  const signOut = useAppStore((state) => state.signOut);
+  const previewVisitorLog = useGuardStore((state) => state.visitorLog);
   const firstName = profile?.fullName?.split(' ')[0] ?? 'Resident';
+  const previewMode = isPreviewProfile(profile);
 
   const visitorsQuery = useQuery({
     queryKey: ['resident', 'pending-visitors', profile?.userId],
     queryFn: fetchResidentPendingVisitors,
-    enabled: Boolean(profile?.userId),
+    enabled: Boolean(profile?.userId) && !previewMode,
     refetchInterval: 15000,
   });
 
   const pendingVisitors = useMemo(
     () =>
-      (visitorsQuery.data ?? []).filter(
-        (visitor) => visitor.approvalStatus === 'pending',
-      ),
-    [visitorsQuery.data],
+      (previewMode
+        ? previewVisitorLog.map((visitor) => ({
+            approvalDeadlineAt: visitor.approvalDeadlineAt,
+            approvalStatus: visitor.approvalStatus,
+            isFrequentVisitor: visitor.frequentVisitor,
+          }))
+        : visitorsQuery.data ?? []
+      ).filter((visitor) => visitor.approvalStatus === 'pending'),
+    [previewMode, previewVisitorLog, visitorsQuery.data],
   );
   const nextDeadline = pendingVisitors
     .map((visitor) => visitor.approvalDeadlineAt)
     .filter((value): value is string => Boolean(value))
     .sort()[0] ?? null;
   const frequentVisitors = useMemo(
-    () => (visitorsQuery.data ?? []).filter((visitor) => visitor.isFrequentVisitor).length,
-    [visitorsQuery.data],
+    () =>
+      (previewMode
+        ? previewVisitorLog.map((visitor) => ({
+            isFrequentVisitor: visitor.frequentVisitor,
+          }))
+        : visitorsQuery.data ?? []
+      ).filter((visitor) => visitor.isFrequentVisitor).length,
+    [previewMode, previewVisitorLog, visitorsQuery.data],
   );
+
+  const totalInboxCount = previewMode ? previewVisitorLog.length : (visitorsQuery.data?.length ?? 0);
 
   return (
     <ScreenShell
@@ -62,6 +80,10 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
       title={`Gate decisions for ${firstName}`}
       description="Approve visitors quickly, keep trusted entries marked as frequent, and review safety alerts without leaving the resident app."
     >
+      {previewMode ? (
+        <PreviewModeBanner description="This resident session is running in preview/test mode. Visitor and notification data may come from preview state instead of live backend records." />
+      ) : null}
+
       <InfoCard>
         <Text style={[styles.heroTitle, { color: colors.foreground }]}>
           Gate approval inbox is live
@@ -72,12 +94,20 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
         <View style={styles.actionGroup}>
           <ActionButton
             label="Open pending approvals"
+            testID="qa_resident_open_approvals"
             onPress={() => navigation.navigate('ResidentApprovals')}
           />
           <ActionButton
             label="Open alert history"
             variant="secondary"
+            testID="qa_resident_open_alerts"
             onPress={() => navigation.navigate('ResidentNotifications')}
+          />
+          <ActionButton
+            label="Sign out"
+            variant="ghost"
+            testID="qa_resident_sign_out"
+            onPress={() => void signOut()}
           />
         </View>
       </InfoCard>
@@ -114,7 +144,7 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
           <MetricCard
             icon={<DoorOpen color={colors.success} size={20} />}
             label="Today in inbox"
-            value={String(visitorsQuery.data?.length ?? 0)}
+            value={String(totalInboxCount)}
             caption="Resident-facing gate entries loaded from backend"
           />
         </View>

@@ -15,10 +15,13 @@ import {
   approveResidentVisitor,
   denyResidentVisitor,
   fetchResidentPendingVisitors,
+  isPreviewProfile,
   setResidentFrequentVisitor,
 } from '../../lib/mobileBackend';
 import type { ResidentTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
+import { useGuardStore } from '../../store/useGuardStore';
+import type { ResidentPendingVisitor } from '../../types/resident';
 
 type ResidentApprovalsScreenProps = BottomTabScreenProps<
   ResidentTabParamList,
@@ -46,12 +49,17 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
   const queryClient = useQueryClient();
+  const previewMode = isPreviewProfile(profile);
+  const previewVisitorLog = useGuardStore((state) => state.visitorLog);
+  const approvePreviewVisitor = useGuardStore((state) => state.approveVisitor);
+  const denyPreviewVisitor = useGuardStore((state) => state.denyVisitor);
+  const setPreviewFrequentVisitor = useGuardStore((state) => state.setVisitorFrequent);
   const [message, setMessage] = useState<string | null>(null);
 
   const visitorsQuery = useQuery({
     queryKey: ['resident', 'pending-visitors', profile?.userId],
     queryFn: fetchResidentPendingVisitors,
-    enabled: Boolean(profile?.userId),
+    enabled: Boolean(profile?.userId) && !previewMode,
     refetchInterval: 10000,
   });
 
@@ -63,6 +71,10 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
   const approveMutation = useMutation({
     mutationFn: async (visitorId: string) => {
+      if (previewMode) {
+        return approvePreviewVisitor(visitorId);
+      }
+
       if (!profile?.userId) {
         throw new Error('Resident profile is missing');
       }
@@ -77,6 +89,10 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
   const denyMutation = useMutation({
     mutationFn: async (visitorId: string) => {
+      if (previewMode) {
+        return denyPreviewVisitor(visitorId, 'Declined from resident mobile app');
+      }
+
       if (!profile?.userId) {
         throw new Error('Resident profile is missing');
       }
@@ -91,7 +107,9 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
   const frequentMutation = useMutation({
     mutationFn: async (input: { visitorId: string; isFrequent: boolean }) =>
-      setResidentFrequentVisitor(input.visitorId, input.isFrequent),
+      previewMode
+        ? setPreviewFrequentVisitor(input.visitorId, input.isFrequent)
+        : setResidentFrequentVisitor(input.visitorId, input.isFrequent),
     onSuccess: async (_data, variables) => {
       setMessage(
         variables.isFrequent
@@ -104,12 +122,37 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
   const orderedVisitors = useMemo(
     () =>
-      [...(visitorsQuery.data ?? [])].sort((left, right) => {
+      [
+        ...(previewMode
+          ? previewVisitorLog
+              .filter((visitor) => visitor.status === 'inside')
+              .map(
+                (visitor): ResidentPendingVisitor => ({
+                  id: visitor.id,
+                  visitorName: visitor.name,
+                  phone: visitor.phone,
+                  purpose: visitor.purpose,
+                  flatId: visitor.flatId,
+                  flatLabel: visitor.destination,
+                  vehicleNumber: visitor.vehicleNumber,
+                  photoUrl: visitor.photoUrl ?? visitor.photoUri,
+                  entryTime: visitor.recordedAt,
+                  approvalStatus:
+                    visitor.approvalStatus === 'checked_out' || visitor.approvalStatus === 'inside'
+                      ? 'pending'
+                      : (visitor.approvalStatus as ResidentPendingVisitor['approvalStatus']),
+                  approvalDeadlineAt: visitor.approvalDeadlineAt,
+                  isFrequentVisitor: visitor.frequentVisitor,
+                  rejectionReason: null,
+                }),
+              )
+          : visitorsQuery.data ?? []),
+      ].sort((left, right) => {
         const leftTime = left.approvalDeadlineAt ? new Date(left.approvalDeadlineAt).getTime() : 0;
         const rightTime = right.approvalDeadlineAt ? new Date(right.approvalDeadlineAt).getTime() : 0;
         return leftTime - rightTime;
       }),
-    [visitorsQuery.data],
+    [previewMode, previewVisitorLog, visitorsQuery.data],
   );
 
   return (
@@ -123,15 +166,22 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
         <Text style={[styles.copy, { color: colors.mutedForeground }]}>
           Live visitor requests from the guard desk appear here with the active 30-second decision window.
         </Text>
-        {message ? <Text style={[styles.message, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.message, { color: colors.primary }]} testID="qa_resident_approvals_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       {orderedVisitors.length ? (
-        orderedVisitors.map((visitor) => (
+        orderedVisitors.map((visitor, index) => (
           <InfoCard key={visitor.id}>
             <View style={styles.headerRow}>
-              <View style={styles.visitorHeading}>
-                <Text style={[styles.visitorName, { color: colors.foreground }]}>
+              <View style={styles.visitorHeading} testID={`qa_resident_approval_card_${index}`}>
+                <Text
+                  style={[styles.visitorName, { color: colors.foreground }]}
+                  testID={`qa_resident_approval_name_${index}`}
+                >
                   {visitor.visitorName}
                 </Text>
                 <Text style={[styles.copy, { color: colors.mutedForeground }]}>
@@ -178,12 +228,14 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
                   approveMutation.isPending ||
                   visitor.approvalStatus !== 'pending'
                 }
+                testID={`qa_resident_approve_visitor_${index}`}
                 onPress={() => approveMutation.mutate(visitor.id)}
               />
               <ActionButton
                 label={denyMutation.isPending ? 'Denying...' : 'Deny visitor'}
                 variant="danger"
                 disabled={denyMutation.isPending || visitor.approvalStatus !== 'pending'}
+                testID={`qa_resident_deny_visitor_${index}`}
                 onPress={() => denyMutation.mutate(visitor.id)}
               />
               <ActionButton
@@ -195,6 +247,7 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
                       : 'Mark frequent'
                 }
                 variant="ghost"
+                testID={`qa_resident_mark_frequent_${index}`}
                 onPress={() =>
                   frequentMutation.mutate({
                     visitorId: visitor.id,

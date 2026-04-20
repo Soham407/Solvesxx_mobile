@@ -142,18 +142,23 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
           </View>
           <FileText color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_supplier_billing_message">
+            {message}
+          </Text>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Select purchase order</Text>
           <View style={styles.selectorWrap}>
             {eligiblePOs.length ? (
-              eligiblePOs.map((po) => {
+              eligiblePOs.map((po, index) => {
                 const isSelected = po.id === selectedPoId;
 
                 return (
                   <Pressable
                     key={po.id}
+                    testID={`qa_supplier_bill_select_${index}`}
                     accessibilityRole="button"
                     onPress={() => setSelectedPoId(po.id)}
                     style={[
@@ -180,12 +185,14 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
 
         <FormField
           helperText="Leave blank to auto-generate a bill number."
+          inputTestID="qa_supplier_bill_number"
           label="Bill number"
           onChangeText={setBillNumber}
           placeholder="BILL-2026-1001"
           value={billNumber}
         />
         <FormField
+          inputTestID="qa_supplier_bill_amount"
           keyboardType="decimal-pad"
           label="Bill amount (INR)"
           onChangeText={setAmount}
@@ -193,6 +200,7 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
           value={amount}
         />
         <FormField
+          inputTestID="qa_supplier_bill_note"
           label="Billing note"
           multiline
           onChangeText={setNote}
@@ -206,6 +214,7 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
           loading={isSaving}
           disabled={!eligiblePOs.length}
           onPress={() => void handleSubmitBill()}
+          testID="qa_supplier_submit_bill"
         />
       </InfoCard>
 
@@ -215,11 +224,16 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
           Total billed value in this mobile workspace: {currencyFormatter.format(totalBilled / 100)}.
         </Text>
         {bills.length ? (
-          bills.map((bill) => (
-            <View key={bill.id} style={styles.billCard}>
+          bills.map((bill, index) => (
+            <View key={bill.id} style={styles.billCard} testID={`qa_supplier_bill_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.billTitle, { color: colors.foreground }]}>{bill.billNumber}</Text>
+                  <Text
+                    style={[styles.billTitle, { color: colors.foreground }]}
+                    testID={`qa_supplier_bill_title_${index}`}
+                  >
+                    {bill.billNumber}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {bill.poNumber} | Submitted on {formatValue(bill.createdAt)}
                   </Text>

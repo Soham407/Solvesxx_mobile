@@ -175,7 +175,11 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
           </View>
           <Package color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_service_materials_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       {role !== 'delivery_boy' ? (
@@ -185,12 +189,13 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Select task</Text>
             <View style={styles.selectorWrap}>
               {activeTasks.length ? (
-                activeTasks.map((task) => {
+                activeTasks.map((task, index) => {
                   const isSelected = task.id === selectedTaskId;
 
                   return (
                     <Pressable
                       key={task.id}
+                      testID={`qa_service_material_task_${index}`}
                       accessibilityRole="button"
                       onPress={() => setSelectedTaskId(task.id)}
                       style={[
@@ -220,12 +225,14 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             </View>
           </View>
           <FormField
+            inputTestID="qa_service_material_label"
             label={roleCopy.label}
             onChangeText={setLabel}
             placeholder={role === 'ac_technician' ? 'Compressor capacitor' : 'Rodent bait sachets'}
             value={label}
           />
           <FormField
+            inputTestID="qa_service_material_quantity"
             keyboardType="number-pad"
             label="Quantity"
             onChangeText={setQuantity}
@@ -233,12 +240,14 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             value={quantity}
           />
           <FormField
+            inputTestID="qa_service_material_unit"
             label="Unit"
             onChangeText={setUnit}
             placeholder={role === 'service_boy' ? 'packs' : 'pcs'}
             value={unit}
           />
           <FormField
+            inputTestID="qa_service_material_note"
             label="Request note"
             multiline
             onChangeText={setNote}
@@ -252,6 +261,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             loading={isSaving}
             disabled={!activeTasks.length}
             onPress={() => void handleSubmit()}
+            testID="qa_service_submit_material_request"
           />
         </InfoCard>
       ) : null}
@@ -262,11 +272,16 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
         </Text>
         {role === 'delivery_boy' ? (
           activeTasks.length ? (
-            activeTasks.map((task) => (
-              <View key={task.id} style={styles.requestCard}>
+            activeTasks.map((task, index) => (
+              <View key={task.id} style={styles.requestCard} testID={`qa_service_delivery_note_card_${index}`}>
                 <View style={styles.headerRow}>
                   <View style={styles.copyWrap}>
-                    <Text style={[styles.requestTitle, { color: colors.foreground }]}>{task.title}</Text>
+                    <Text
+                      style={[styles.requestTitle, { color: colors.foreground }]}
+                      testID={`qa_service_delivery_note_title_${index}`}
+                    >
+                      {task.title}
+                    </Text>
                     <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                       {task.referenceCode} | {task.unitLabel ?? task.locationName}
                     </Text>
@@ -287,18 +302,23 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             </Text>
           )
         ) : orderedRequests.length ? (
-          orderedRequests.map((request) => (
-            <View key={request.id} style={styles.requestCard}>
+          orderedRequests.map((request, index) => (
+            <View key={request.id} style={styles.requestCard} testID={`qa_service_request_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.requestTitle, { color: colors.foreground }]}>
+                  <Text
+                    style={[styles.requestTitle, { color: colors.foreground }]}
+                    testID={`qa_service_request_title_${index}`}
+                  >
                     {request.label}
                   </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {request.quantity} {request.unit} | Requested {formatTimestamp(request.requestedAt)}
                   </Text>
                 </View>
-                <StatusChip label={request.status.replace(/_/g, ' ')} tone={getStatusTone(request.status)} />
+                <View testID={`qa_service_request_status_${index}`}>
+                  <StatusChip label={request.status.replace(/_/g, ' ')} tone={getStatusTone(request.status)} />
+                </View>
               </View>
               {request.note ? (
                 <Text style={[styles.caption, { color: colors.foreground }]}>{request.note}</Text>
@@ -310,6 +330,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
                 <ActionButton
                   label="Mark issued"
                   variant="ghost"
+                  testID={`qa_service_mark_issued_${index}`}
                   onPress={() => void markMaterialIssued(request.id)}
                 />
               ) : null}

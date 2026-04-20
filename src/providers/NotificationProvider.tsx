@@ -28,6 +28,10 @@ export function NotificationProvider() {
       return;
     }
 
+    console.log('[push] NotificationProvider registerDevice start', {
+      role: profile.role,
+      userId: profile.userId,
+    });
     void registerDevice(profile);
   }, [profile, registerDevice, session]);
 

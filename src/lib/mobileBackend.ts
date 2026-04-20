@@ -1,4 +1,4 @@
-import { isStagingAutomationEnabled } from './stagingAutomation';
+import { getStagingAutomationImageUri, isStagingAutomationEnabled } from './stagingAutomation';
 import { supabase } from './supabase';
 import type { AppUserProfile } from '../types/app';
 import type {
@@ -116,7 +116,9 @@ async function uploadPrivateImage(options: {
   const parsedDataUri = parseDataUri(sourceUri);
 
   if (parsedDataUri) {
-    if (isStagingAutomationEnabled()) {
+    // Only suppress the intentionally fake 1px staging image. Real camera captures
+    // also arrive as data URIs in dev builds and must still be uploaded.
+    if (isStagingAutomationEnabled() && sourceUri === getStagingAutomationImageUri()) {
       return null;
     }
 

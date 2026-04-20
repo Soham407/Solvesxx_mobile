@@ -12,6 +12,8 @@ interface ActionButtonProps {
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
+  testID?: string;
+  accessibilityLabel?: string;
 }
 
 export function ActionButton({
@@ -20,6 +22,8 @@ export function ActionButton({
   variant = 'primary',
   disabled = false,
   loading = false,
+  testID,
+  accessibilityLabel,
 }: ActionButtonProps) {
   const { colors } = useAppTheme();
 
@@ -49,8 +53,10 @@ export function ActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
       disabled={disabled || loading}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         {

@@ -19,6 +19,7 @@
       "bundleIdentifier": "com.facilitypro.mobile"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F8F6F2"

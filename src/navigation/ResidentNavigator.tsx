@@ -45,16 +45,20 @@ export function ResidentNavigator() {
         },
       })}
     >
-      <Tab.Screen component={ResidentHomeScreen} name="ResidentHome" options={{ title: 'Home' }} />
+      <Tab.Screen
+        component={ResidentHomeScreen}
+        name="ResidentHome"
+        options={{ title: 'Home', tabBarButtonTestID: 'qa_resident_tab_home' }}
+      />
       <Tab.Screen
         component={ResidentApprovalsScreen}
         name="ResidentApprovals"
-        options={{ title: 'Approvals' }}
+        options={{ title: 'Approvals', tabBarButtonTestID: 'qa_resident_tab_approvals' }}
       />
       <Tab.Screen
         component={ResidentNotificationsScreen}
         name="ResidentNotifications"
-        options={{ title: 'Alerts' }}
+        options={{ title: 'Alerts', tabBarButtonTestID: 'qa_resident_tab_alerts' }}
       />
     </Tab.Navigator>
   );

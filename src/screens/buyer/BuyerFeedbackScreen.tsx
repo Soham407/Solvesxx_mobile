@@ -111,7 +111,11 @@ export function BuyerFeedbackScreen(_props: BuyerFeedbackScreenProps) {
           </View>
           <MessageSquareMore color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_buyer_feedback_message">
+            {message}
+          </Text>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Select request</Text>
@@ -122,6 +126,7 @@ export function BuyerFeedbackScreen(_props: BuyerFeedbackScreenProps) {
 
                 return (
                   <Pressable
+                    testID={`qa_buyer_feedback_request_${request.id}`}
                     key={request.id}
                     accessibilityRole="button"
                     onPress={() => setSelectedRequestId(request.id)}
@@ -165,6 +170,7 @@ export function BuyerFeedbackScreen(_props: BuyerFeedbackScreenProps) {
 
               return (
                 <Pressable
+                  testID={`qa_buyer_feedback_rating_${value}`}
                   key={value}
                   accessibilityRole="button"
                   onPress={() => setRating(value)}
@@ -187,6 +193,7 @@ export function BuyerFeedbackScreen(_props: BuyerFeedbackScreenProps) {
         </View>
 
         <FormField
+          inputTestID="qa_buyer_feedback_note"
           label="Feedback note"
           multiline
           onChangeText={setNote}
@@ -200,6 +207,7 @@ export function BuyerFeedbackScreen(_props: BuyerFeedbackScreenProps) {
           loading={isSubmitting}
           disabled={!feedbackEligibleRequests.length}
           onPress={() => void handleSubmit()}
+          testID="qa_buyer_submit_feedback"
         />
       </InfoCard>
 

@@ -137,67 +137,80 @@ export function OversightAlertsScreen(_props: OversightAlertsScreenProps) {
             tone={activeCount ? 'danger' : 'success'}
           />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_oversight_alerts_message">
+            {message}
+          </Text>
+        ) : null}
       </InfoCard>
 
       {orderedAlerts.length ? (
-        orderedAlerts.map((alert) => (
+        orderedAlerts.map((alert, index) => (
           <InfoCard key={alert.id}>
-            <View style={styles.headerRow}>
-              <View style={styles.copyWrap}>
-                <Text style={[styles.alertTitle, { color: colors.foreground }]}>
-                  {alert.guardName} - {alert.locationName}
-                </Text>
-                <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-                  {alert.note} - {formatValue(alert.createdAt)}
-                </Text>
+            <View testID={`qa_oversight_alert_card_${index}`}>
+              <View style={styles.headerRow}>
+                <View style={styles.copyWrap}>
+                  <Text
+                    style={[styles.alertTitle, { color: colors.foreground }]}
+                    testID={`qa_oversight_alert_title_${index}`}
+                  >
+                    {alert.guardName} - {alert.locationName}
+                  </Text>
+                  <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+                    {alert.note} - {formatValue(alert.createdAt)}
+                  </Text>
+                </View>
+                <View testID={`qa_oversight_alert_status_${index}`}>
+                  <StatusChip
+                    label={alert.status}
+                    tone={
+                      alert.status === 'active'
+                        ? 'danger'
+                        : alert.status === 'acknowledged'
+                          ? 'warning'
+                          : 'success'
+                    }
+                  />
+                </View>
               </View>
-              <StatusChip
-                label={alert.status}
-                tone={
-                  alert.status === 'active'
-                    ? 'danger'
-                    : alert.status === 'acknowledged'
-                      ? 'warning'
-                      : 'success'
-                }
-              />
-            </View>
-            <View style={styles.metaRow}>
-              <StatusChip
-                label={alert.alertType.replace(/_/g, ' ')}
-                tone={alert.alertType === 'panic' ? 'danger' : 'warning'}
-              />
-              <View style={styles.iconRow}>
-                {alert.alertType === 'panic' ? (
-                  <Siren color={colors.destructive} size={18} />
-                ) : (
-                  <ShieldAlert color={colors.warning} size={18} />
-                )}
-                <Text style={[styles.caption, { color: colors.foreground }]}>
-                  {previewMode
-                    ? 'Preview acknowledgement flow is active.'
-                    : 'Actions below update the live alert state on the backend.'}
-                </Text>
+              <View style={styles.metaRow}>
+                <StatusChip
+                  label={alert.alertType.replace(/_/g, ' ')}
+                  tone={alert.alertType === 'panic' ? 'danger' : 'warning'}
+                />
+                <View style={styles.iconRow}>
+                  {alert.alertType === 'panic' ? (
+                    <Siren color={colors.destructive} size={18} />
+                  ) : (
+                    <ShieldAlert color={colors.warning} size={18} />
+                  )}
+                  <Text style={[styles.caption, { color: colors.foreground }]}>
+                    {previewMode
+                      ? 'Preview acknowledgement flow is active.'
+                      : 'Actions below update the live alert state on the backend.'}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.actionRow}>
-              <ActionButton
-                label={
-                  acknowledgeMutation.isPending ? 'Acknowledging...' : 'Acknowledge'
-                }
-                variant="secondary"
-                disabled={
-                  acknowledgeMutation.isPending || alert.status !== 'active'
-                }
-                onPress={() => void handleAcknowledge(alert.id, alert.guardName)}
-              />
-              <ActionButton
-                label={resolveMutation.isPending ? 'Resolving...' : 'Resolve'}
-                variant="ghost"
-                disabled={resolveMutation.isPending || alert.status === 'resolved'}
-                onPress={() => void handleResolve(alert.id, alert.guardName)}
-              />
+              <View style={styles.actionRow}>
+                <ActionButton
+                  label={
+                    acknowledgeMutation.isPending ? 'Acknowledging...' : 'Acknowledge'
+                  }
+                  variant="secondary"
+                  testID={`qa_oversight_alert_acknowledge_${index}`}
+                  disabled={
+                    acknowledgeMutation.isPending || alert.status !== 'active'
+                  }
+                  onPress={() => void handleAcknowledge(alert.id, alert.guardName)}
+                />
+                <ActionButton
+                  label={resolveMutation.isPending ? 'Resolving...' : 'Resolve'}
+                  variant="ghost"
+                  testID={`qa_oversight_alert_resolve_${index}`}
+                  disabled={resolveMutation.isPending || alert.status === 'resolved'}
+                  onPress={() => void handleResolve(alert.id, alert.guardName)}
+                />
+              </View>
             </View>
           </InfoCard>
         ))

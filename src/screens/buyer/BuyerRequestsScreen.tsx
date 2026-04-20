@@ -132,9 +132,19 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
           </View>
           <ShoppingCart color={colors.primary} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_buyer_request_message">
+            {message}
+          </Text>
+        ) : null}
 
-        <FormField label="Request title" onChangeText={setTitle} placeholder="Lobby housekeeping consumables" value={title} />
+        <FormField
+          inputTestID="qa_buyer_request_title"
+          label="Request title"
+          onChangeText={setTitle}
+          placeholder="Lobby housekeeping consumables"
+          value={title}
+        />
         <FormField
           label="Description"
           multiline
@@ -153,6 +163,7 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
 
               return (
                 <Pressable
+                  testID={`qa_buyer_request_category_${option.toLowerCase()}`}
                   key={option}
                   accessibilityRole="button"
                   onPress={() => setCategoryLabel(option)}
@@ -181,6 +192,7 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
 
               return (
                 <Pressable
+                  testID={`qa_buyer_request_priority_${option}`}
                   key={option}
                   accessibilityRole="button"
                   onPress={() => setPriority(option)}
@@ -209,7 +221,13 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
           placeholder="2026-04-15"
           value={preferredDeliveryDate}
         />
-        <FormField label="Primary item or service" onChangeText={setItemLabel} placeholder="Floor cleaner" value={itemLabel} />
+        <FormField
+          inputTestID="qa_buyer_request_item"
+          label="Primary item or service"
+          onChangeText={setItemLabel}
+          placeholder="Floor cleaner"
+          value={itemLabel}
+        />
         <View style={styles.twoColumnRow}>
           <View style={styles.column}>
             <FormField keyboardType="number-pad" label="Quantity" onChangeText={setQuantity} placeholder="24" value={quantity} />
@@ -218,7 +236,12 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
             <FormField label="Unit" onChangeText={setUnit} placeholder="bottles" value={unit} />
           </View>
         </View>
-        <ActionButton label={isSaving ? 'Saving...' : 'Create request'} loading={isSaving} onPress={() => void handleCreateRequest()} />
+        <ActionButton
+          label={isSaving ? 'Saving...' : 'Create request'}
+          loading={isSaving}
+          onPress={() => void handleCreateRequest()}
+          testID="qa_buyer_create_request"
+        />
       </InfoCard>
 
       <InfoCard>
@@ -232,11 +255,16 @@ export function BuyerRequestsScreen(_props: BuyerRequestsScreenProps) {
           <ClipboardList color={colors.info} size={22} />
         </View>
         {orderedRequests.length ? (
-          orderedRequests.map((request) => (
-            <View key={request.id} style={styles.requestCard}>
+          orderedRequests.map((request, index) => (
+            <View key={request.id} style={styles.requestCard} testID={`qa_buyer_request_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.requestTitle, { color: colors.foreground }]}>{request.title}</Text>
+                  <Text
+                    style={[styles.requestTitle, { color: colors.foreground }]}
+                    testID={`qa_buyer_request_title_${index}`}
+                  >
+                    {request.title}
+                  </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
                     {request.requestNumber} | {request.categoryLabel} | {request.locationName}
                   </Text>

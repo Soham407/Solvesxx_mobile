@@ -203,7 +203,11 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
           </View>
           <ShieldAlert color={colors.destructive} size={22} />
         </View>
-        {message ? <Text style={[styles.caption, { color: colors.primary }]}>{message}</Text> : null}
+        {message ? (
+          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_oversight_tickets_message">
+            {message}
+          </Text>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Ticket type</Text>
@@ -214,6 +218,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
               return (
                 <Pressable
                   key={option.value}
+                  testID={`qa_oversight_ticket_type_${option.value}`}
                   accessibilityRole="button"
                   onPress={() => setTicketType(option.value)}
                   style={[
@@ -249,6 +254,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
               return (
                 <Pressable
                   key={option.value}
+                  testID={`qa_oversight_ticket_severity_${option.value}`}
                   accessibilityRole="button"
                   onPress={() => setSeverity(option.value)}
                   style={[
@@ -276,24 +282,28 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
         </View>
 
         <FormField
+          inputTestID="qa_oversight_ticket_subject"
           label={ticketType === 'behavior' ? 'Guard or staff name' : 'Material or item name'}
           onChangeText={setSubjectName}
           placeholder={ticketType === 'behavior' ? 'Ritu Nair' : 'Lobby sanitiser refill'}
           value={subjectName}
         />
         <FormField
+          inputTestID="qa_oversight_ticket_category"
           label="Category"
           onChangeText={setCategory}
           placeholder={ticketType === 'behavior' ? 'Uniform non-compliance' : 'Damaged seal'}
           value={category}
         />
         <FormField
+          inputTestID="qa_oversight_ticket_location"
           label="Location"
           onChangeText={setLocationName}
           placeholder="North Gate"
           value={locationName}
         />
         <FormField
+          inputTestID="qa_oversight_ticket_note"
           label="Note"
           multiline
           onChangeText={setNote}
@@ -303,6 +313,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
           value={note}
         />
         <FormField
+          inputTestID="qa_oversight_ticket_evidence"
           helperText="Optional reference while camera upload is still in a later phase."
           label="Evidence reference"
           onChangeText={setEvidenceUri}
@@ -317,6 +328,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
               <PackageSearch color={colors.info} size={20} />
             </View>
             <FormField
+              inputTestID="qa_oversight_ticket_batch_number"
               label="Batch number"
               onChangeText={setBatchNumber}
               placeholder="BATCH-AC-119"
@@ -325,6 +337,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
             <View style={styles.twoColumnRow}>
               <View style={styles.column}>
                 <FormField
+                  inputTestID="qa_oversight_ticket_ordered_qty"
                   keyboardType="number-pad"
                   label="Ordered qty"
                   onChangeText={setOrderedQuantity}
@@ -334,6 +347,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
               </View>
               <View style={styles.column}>
                 <FormField
+                  inputTestID="qa_oversight_ticket_received_qty"
                   keyboardType="number-pad"
                   label="Received qty"
                   onChangeText={setReceivedQuantity}
@@ -344,6 +358,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
             </View>
             {showReturnField ? (
               <FormField
+                inputTestID="qa_oversight_ticket_return_qty"
                 keyboardType="number-pad"
                 label="Return qty"
                 onChangeText={setReturnQuantity}
@@ -358,6 +373,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
           label={isSaving ? 'Saving...' : 'Create ticket'}
           loading={isSaving}
           onPress={() => void handleCreateTicket()}
+          testID="qa_oversight_create_ticket"
         />
       </InfoCard>
 
@@ -367,11 +383,14 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
           Tickets are ordered so the unresolved items stay at the top for quick follow-up.
         </Text>
         {sortedTickets.length ? (
-          sortedTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketCard}>
+          sortedTickets.map((ticket, index) => (
+            <View key={ticket.id} style={styles.ticketCard} testID={`qa_oversight_ticket_card_${index}`}>
               <View style={styles.headerRow}>
                 <View style={styles.copyWrap}>
-                  <Text style={[styles.ticketTitle, { color: colors.foreground }]}>
+                  <Text
+                    style={[styles.ticketTitle, { color: colors.foreground }]}
+                    testID={`qa_oversight_ticket_title_${index}`}
+                  >
                     {ticket.subjectName}
                   </Text>
                   <Text style={[styles.caption, { color: colors.mutedForeground }]}>
@@ -379,7 +398,9 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
                   </Text>
                 </View>
                 <View style={styles.ticketStatusWrap}>
-                  <StatusChip label={ticket.status} tone={getStatusTone(ticket.status)} />
+                  <View testID={`qa_oversight_ticket_status_${index}`}>
+                    <StatusChip label={ticket.status} tone={getStatusTone(ticket.status)} />
+                  </View>
                   <StatusChip label={ticket.severity} tone={getSeverityTone(ticket.severity)} />
                 </View>
               </View>
@@ -410,6 +431,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
                 <ActionButton
                   label="Acknowledge"
                   variant="secondary"
+                  testID={`qa_oversight_ticket_acknowledge_${index}`}
                   disabled={ticket.status !== 'open'}
                   onPress={() => {
                     void setTicketStatus(ticket.id, 'acknowledged');
@@ -419,6 +441,7 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
                 <ActionButton
                   label="Close"
                   variant="ghost"
+                  testID={`qa_oversight_ticket_close_${index}`}
                   disabled={ticket.status === 'closed'}
                   onPress={() => {
                     void setTicketStatus(ticket.id, 'closed');

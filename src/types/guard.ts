@@ -2,7 +2,7 @@ export type GuardDutyStatus = 'off_duty' | 'on_duty';
 
 export type GuardQueueActionType = 'attendance' | 'checklist' | 'sos' | 'visitor';
 
-export type GuardSosType = 'panic' | 'inactivity';
+export type GuardSosType = 'panic' | 'inactivity' | 'geo_fence_breach';
 export type GuardChecklistInputType = 'yes_no' | 'numeric';
 export type GuardVisitorApprovalStatus =
   | 'pending'

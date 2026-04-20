@@ -21,3 +21,7 @@ export async function loadServiceState() {
 export async function saveServiceState(state: ServicePersistedState) {
   await AsyncStorage.setItem(SERVICE_STATE_KEY, JSON.stringify(state));
 }
+
+export async function clearServiceState() {
+  await AsyncStorage.removeItem(SERVICE_STATE_KEY);
+}
