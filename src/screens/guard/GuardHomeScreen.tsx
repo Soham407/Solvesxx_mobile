@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { AlertTriangle, ClipboardList, MapPin, ShieldAlert, Users } from 'lucide-react-native';
 
+import { PanicButton } from '../../components/guard/PanicButton';
 import { MetricCard } from '../../components/guard/MetricCard';
 import { StatusChip } from '../../components/guard/StatusChip';
 import { ActionButton } from '../../components/shared/ActionButton';
@@ -28,6 +29,7 @@ import {
   getCurrentLocationFix,
   requestGeoFencePermissions,
 } from '../../lib/location';
+import { sendPanicAlertSms, sendPushNotificationToManager } from '../../lib/smsService';
 import {
   buildAssignedLocationSnapshot,
   getStagingAutomationImageUri,
@@ -237,6 +239,27 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
               photoUri: photo.uri,
             }));
 
+      // Start/stop GPS polling based on duty status
+      if (dutyStatus === 'off_duty' && !usePreviewFlow) {
+        // Starting shift - start periodic GPS tracking
+        setTimeout(() => {
+          try {
+            // Use the guard store to start GPS polling
+            const { startGpsPolling, startGeofenceMonitoring } = useGuardStore.getState();
+            startGpsPolling(profile);
+            startGeofenceMonitoring(profile);
+            setMessage(msg => msg ? `${msg} GPS tracking started.` : 'GPS tracking started.');
+          } catch (gpsError) {
+            console.warn('[Guard] GPS polling setup failed:', gpsError);
+          }
+        }, 500);
+      } else if (dutyStatus === 'on_duty' && !usePreviewFlow) {
+        // Ending shift - stop GPS tracking
+        const { stopGpsPolling, stopGeofenceMonitoring } = useGuardStore.getState();
+        stopGpsPolling();
+        stopGeofenceMonitoring();
+      }
+
       setMessage(
         dutyStatus === 'off_duty'
           ? result.queued
@@ -339,12 +362,36 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
         return;
       }
 
+      // Submit SOS alert to backend
       await submitSosAlert({
         alertType: options.alertType,
         location,
         note: options.note || getDefaultSosNote(options.alertType),
         photoUri: photo.uri ?? latestGuardEvidencePhotoUri ?? '',
       });
+
+      // Send SMS and push notifications asynchronously (don't block UI)
+      setTimeout(async () => {
+        try {
+          // Send SMS to manager and residents
+          await sendPanicAlertSms({
+            guardName: profile?.fullName || 'Guard',
+            guardPhone: profile?.phone || undefined,
+            location,
+            alertType: options.alertType,
+          });
+
+          // Send push notification to manager
+          await sendPushNotificationToManager({
+            guardName: profile?.fullName || 'Guard',
+            alertType: options.alertType,
+            location,
+          });
+        } catch (notificationError) {
+          console.warn('[Guard Home] SMS/Push notification error (non-blocking):', notificationError);
+          // Don't show error to user - notifications are backup to main alert
+        }
+      }, 500);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'SOS alert could not be created.');
     } finally {
@@ -474,26 +521,12 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
         </View>
       </InfoCard>
 
-      <Pressable
-        accessibilityRole="button"
+      <PanicButton
         disabled={isBusy}
         onPress={openSosFlow}
         testID="qa_guard_sos_trigger"
-        style={[
-          styles.sosCard,
-          {
-            backgroundColor: colors.destructive,
-            borderColor: colors.destructive,
-            opacity: isBusy ? 0.7 : 1,
-          },
-        ]}
-      >
-        <ShieldAlert color={colors.destructiveForeground} size={28} />
-        <Text style={[styles.sosTitle, { color: colors.destructiveForeground }]}>Send SOS Panic Alert</Text>
-        <Text style={[styles.sosCaption, { color: colors.destructiveForeground }]}>
-          Use this only for a real incident. You will choose the alert type, add a short note, and capture evidence with live location.
-        </Text>
-      </Pressable>
+        colors={colors}
+      />
 
       <View style={styles.metricsGrid}>
         <View style={styles.metricCell}>

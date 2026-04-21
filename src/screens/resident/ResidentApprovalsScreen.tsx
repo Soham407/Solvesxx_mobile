@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -22,6 +22,7 @@ import {
 import type { ResidentTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useGuardStore } from '../../store/useGuardStore';
+import { useResidentPresenceStore } from '../../store/useResidentPresenceStore';
 import type { ResidentPendingVisitor } from '../../types/resident';
 
 type ResidentApprovalsScreenProps = BottomTabScreenProps<
@@ -55,6 +56,8 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   const approvePreviewVisitor = useGuardStore((state) => state.approveVisitor);
   const denyPreviewVisitor = useGuardStore((state) => state.denyVisitor);
   const setPreviewFrequentVisitor = useGuardStore((state) => state.setVisitorFrequent);
+  const activeResidents = useResidentPresenceStore((state) => state.members);
+  const hasLiveSync = useResidentPresenceStore((state) => state.hasLiveSync);
   const [message, setMessage] = useState<string | null>(null);
   const [denyModalOpen, setDenyModalOpen] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<ResidentPendingVisitor | null>(null);
@@ -186,6 +189,21 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
     });
   };
 
+  useEffect(() => {
+    if (!selectedVisitor) {
+      return;
+    }
+
+    const currentVisitor = orderedVisitors.find((visitor) => visitor.id === selectedVisitor.id);
+
+    if (!currentVisitor || currentVisitor.approvalStatus !== 'pending') {
+      setDenyModalOpen(false);
+      setSelectedVisitor(null);
+      setDenyReason('');
+      setMessage('This visitor was updated from another resident session.');
+    }
+  }, [orderedVisitors, selectedVisitor]);
+
   return (
     <ScreenShell
       eyebrow="Gate Approval"
@@ -196,6 +214,15 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Approval queue</Text>
         <Text style={[styles.copy, { color: colors.mutedForeground }]}>
           Each request stays here until you approve it, deny it, or the decision window expires.
+        </Text>
+        <Text style={[styles.copy, { color: colors.mutedForeground }]}>
+          {hasLiveSync
+            ? activeResidents.length
+              ? `${activeResidents.map((resident) => resident.fullName).join(', ')} ${
+                  activeResidents.length === 1 ? 'is' : 'are'
+                } also watching this queue.`
+              : 'Live sync is active for this queue.'
+            : 'Live sync is reconnecting. Pull-to-refresh is not required.'}
         </Text>
         {message ? (
           <Text style={[styles.message, { color: colors.primary }]} testID="qa_resident_approvals_message">

@@ -17,6 +17,7 @@ import type { ResidentTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useGuardStore } from '../../store/useGuardStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useResidentPresenceStore } from '../../store/useResidentPresenceStore';
 
 type ResidentHomeScreenProps = BottomTabScreenProps<ResidentTabParamList, 'ResidentHome'>;
 
@@ -37,6 +38,8 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   const signOut = useAppStore((state) => state.signOut);
   const previewVisitorLog = useGuardStore((state) => state.visitorLog);
   const inbox = useNotificationStore((state) => state.inbox);
+  const activeResidents = useResidentPresenceStore((state) => state.members);
+  const hasLiveSync = useResidentPresenceStore((state) => state.hasLiveSync);
   const firstName = profile?.fullName?.split(' ')[0] ?? 'Resident';
   const previewMode = isPreviewProfile(profile);
 
@@ -107,6 +110,19 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
             onPress={() => navigation.navigate('ResidentNotifications')}
           />
         </View>
+      </InfoCard>
+
+      <InfoCard>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Live household sync</Text>
+        <Text style={[styles.copy, { color: colors.mutedForeground }]}>
+          {hasLiveSync
+            ? activeResidents.length
+              ? `${activeResidents.map((resident) => resident.fullName).join(', ')} ${
+                  activeResidents.length === 1 ? 'is' : 'are'
+                } also online for this flat.`
+              : 'Live updates are connected. You are the only active resident right now.'
+            : 'Live updates reconnect automatically when your resident session is online.'}
+        </Text>
       </InfoCard>
 
       <View style={styles.metricsGrid}>

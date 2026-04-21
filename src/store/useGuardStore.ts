@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 
 import { loadGuardState, saveGuardState } from '../lib/guardStorage';
+import {
+  startPeriodicGpsTracking,
+  stopPeriodicGpsTracking,
+  startGeofenceExitMonitoring,
+  stopGeofenceExitMonitoring,
+} from '../lib/gpsService';
 import type { AppUserProfile } from '../types/app';
 import type {
   GuardAttendanceEntry,
@@ -309,6 +315,11 @@ interface GuardStore extends GuardPersistedState {
   denyVisitor: (id: string, reason?: string) => Promise<{ updated: boolean }>;
   setVisitorFrequent: (id: string, isFrequent: boolean) => Promise<{ updated: boolean }>;
   flushOfflineQueue: () => Promise<number>;
+  // GPS/Geofence methods
+  startGpsPolling: (profile: AppUserProfile | null) => void;
+  stopGpsPolling: () => void;
+  startGeofenceMonitoring: (profile: AppUserProfile | null, onExit?: (reason: string) => void) => void;
+  stopGeofenceMonitoring: () => void;
 }
 
 function buildPersistedState(state: GuardStore): GuardPersistedState {
@@ -780,5 +791,41 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
 
     await persistGuardStore(get);
     return queueSize;
+  },
+
+  // GPS/Geofence methods
+  startGpsPolling: (profile) => {
+    const state = get();
+    if (state.dutyStatus === 'off_duty') {
+      console.warn('[Guard Store] Cannot start GPS polling while off duty');
+      return;
+    }
+
+    startPeriodicGpsTracking(profile, 300, (location) => {
+      set({
+        lastKnownLocation: location,
+      });
+    });
+  },
+
+  stopGpsPolling: () => {
+    stopPeriodicGpsTracking();
+  },
+
+  startGeofenceMonitoring: (profile, onExit) => {
+    const state = get();
+    if (state.dutyStatus === 'off_duty') {
+      console.warn('[Guard Store] Cannot start geofence monitoring while off duty');
+      return;
+    }
+
+    startGeofenceExitMonitoring(profile, (reason) => {
+      console.warn('[Guard Store] Geofence exit detected:', reason);
+      onExit?.(reason);
+    });
+  },
+
+  stopGeofenceMonitoring: () => {
+    stopGeofenceExitMonitoring();
   },
 }));
