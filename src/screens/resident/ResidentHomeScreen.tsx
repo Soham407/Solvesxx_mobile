@@ -16,6 +16,7 @@ import { fetchResidentPendingVisitors, isPreviewProfile } from '../../lib/mobile
 import type { ResidentTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useGuardStore } from '../../store/useGuardStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 type ResidentHomeScreenProps = BottomTabScreenProps<ResidentTabParamList, 'ResidentHome'>;
 
@@ -35,6 +36,7 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   const profile = useAppStore((state) => state.profile);
   const signOut = useAppStore((state) => state.signOut);
   const previewVisitorLog = useGuardStore((state) => state.visitorLog);
+  const inbox = useNotificationStore((state) => state.inbox);
   const firstName = profile?.fullName?.split(' ')[0] ?? 'Resident';
   const previewMode = isPreviewProfile(profile);
 
@@ -73,12 +75,13 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   );
 
   const totalInboxCount = previewMode ? previewVisitorLog.length : (visitorsQuery.data?.length ?? 0);
+  const unreadAlerts = inbox.filter((entry) => entry.readAt === null).length;
 
   return (
     <ScreenShell
       eyebrow="Resident Access"
-      title={`Gate decisions for ${firstName}`}
-      description="Approve visitors quickly, keep trusted entries marked as frequent, and review safety alerts without leaving the resident app."
+      title={`Welcome back, ${firstName}`}
+      description="Handle gate approvals quickly and keep track of important updates from your society."
     >
       {previewMode ? (
         <PreviewModeBanner description="This resident session is running in preview/test mode. Visitor and notification data may come from preview state instead of live backend records." />
@@ -86,28 +89,22 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
 
       <InfoCard>
         <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-          Gate approval inbox is live
+          Visitors waiting at your gate
         </Text>
         <Text style={[styles.copy, { color: colors.mutedForeground }]}>
-          Your resident flow is now connected to live guard entries instead of demo-only previews.
+          Review new entries, approve expected guests, and deny anything unfamiliar from one place.
         </Text>
         <View style={styles.actionGroup}>
           <ActionButton
-            label="Open pending approvals"
+            label="Review visitor approvals"
             testID="qa_resident_open_approvals"
             onPress={() => navigation.navigate('ResidentApprovals')}
           />
           <ActionButton
-            label="Open alert history"
+            label="Open alerts and updates"
             variant="secondary"
             testID="qa_resident_open_alerts"
             onPress={() => navigation.navigate('ResidentNotifications')}
-          />
-          <ActionButton
-            label="Sign out"
-            variant="ghost"
-            testID="qa_resident_sign_out"
-            onPress={() => void signOut()}
           />
         </View>
       </InfoCard>
@@ -124,9 +121,9 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
         <View style={styles.metricCell}>
           <MetricCard
             icon={<Clock3 color={colors.warning} size={20} />}
-            label="Next decision"
+            label="Next deadline"
             value={formatTime(nextDeadline)}
-            caption="30-second resident approval window"
+            caption="Earliest visitor waiting on your answer"
           />
         </View>
       </View>
@@ -135,20 +132,33 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
         <View style={styles.metricCell}>
           <MetricCard
             icon={<BellRing color={colors.info} size={20} />}
-            label="Frequent visitors"
-            value={String(frequentVisitors)}
-            caption="Trusted visitors remembered for faster decisions"
+            label="Unread alerts"
+            value={String(unreadAlerts)}
+            caption="Updates you have not opened yet"
           />
         </View>
         <View style={styles.metricCell}>
           <MetricCard
             icon={<DoorOpen color={colors.success} size={20} />}
-            label="Today in inbox"
-            value={String(totalInboxCount)}
-            caption="Resident-facing gate entries loaded from backend"
+            label="Trusted visitors"
+            value={String(frequentVisitors)}
+            caption="People you marked for faster repeat decisions"
           />
         </View>
       </View>
+
+      <InfoCard>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Account</Text>
+        <Text style={[styles.copy, { color: colors.mutedForeground }]}>
+          Sign out when you finish testing this resident account.
+        </Text>
+        <ActionButton
+          label="Sign out"
+          variant="ghost"
+          testID="qa_resident_sign_out"
+          onPress={() => void signOut()}
+        />
+      </InfoCard>
     </ScreenShell>
   );
 }
@@ -166,6 +176,10 @@ const styles = StyleSheet.create({
   },
   actionGroup: {
     gap: Spacing.base,
+  },
+  sectionTitle: {
+    fontFamily: FontFamily.sansBold,
+    fontSize: FontSize.lg,
   },
   metricsGrid: {
     flexDirection: 'row',

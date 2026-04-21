@@ -1,0 +1,926 @@
+{
+  "communities": {
+    "0": [
+      "hrms_applyleavebalances",
+      "hrms_buildpreviewattendancerecords",
+      "hrms_buildpreviewdocuments",
+      "hrms_buildpreviewleaveapplications",
+      "hrms_buildpreviewleavetypes",
+      "hrms_buildpreviewpayslips",
+      "hrms_calculatehourdelta",
+      "hrms_calculateinclusiveleavedays",
+      "hrms_clearhrmspreviewstate",
+      "hrms_createlocalid",
+      "hrms_fetchhrmsattendancerecords",
+      "hrms_fetchhrmsdashboarddata",
+      "hrms_fetchhrmsdocuments",
+      "hrms_fetchhrmsleavesnapshot",
+      "hrms_fetchhrmspayslips",
+      "hrms_fileuritoblob",
+      "hrms_gethrmsdocumentlabel",
+      "hrms_getstoragekey",
+      "hrms_inferfileextension",
+      "hrms_isfallbackleavetypeid",
+      "hrms_ishrmsdocumenttype",
+      "hrms_ispreviewprofile",
+      "hrms_isrecord",
+      "hrms_loadattendancedrafts",
+      "hrms_loaddocumentdrafts",
+      "hrms_loadleavedrafts",
+      "hrms_mapattendancerow",
+      "hrms_mapdocumentrow",
+      "hrms_mapleaveapplicationrow",
+      "hrms_mapleavetyperow",
+      "hrms_mappaysliprow",
+      "hrms_mergeattendance",
+      "hrms_mergebyid",
+      "hrms_readstoredarray",
+      "hrms_recordhrmsattendance",
+      "hrms_resolvegeofence",
+      "hrms_resolveleavetypeid",
+      "hrms_saveattendancedraft",
+      "hrms_savedocumentdraft",
+      "hrms_saveleavedraft",
+      "hrms_saveleavedrafts",
+      "hrms_submithrmsleaveapplication",
+      "hrms_syncpendinghrmsleavedrafts",
+      "hrms_toisodate",
+      "hrms_tonumber",
+      "hrms_uploadhrmsdocument",
+      "hrms_writestoredarray",
+      "src_lib_hrms_ts"
+    ],
+    "1": [
+      "actionbutton_actionbutton",
+      "biometricsetupscreen_biometricsetupscreen",
+      "guardhomescreen_formattimestamp",
+      "guardhomescreen_gettodaycount",
+      "guardhomescreen_guardhomescreen",
+      "hrmsleavescreen_formatdatelabel",
+      "hrmsleavescreen_hrmsleavescreen",
+      "hrmsnavigator_hrmsnavigator",
+      "infocard_infocard",
+      "loadingscreen_loadingscreen",
+      "oversighthomescreen_formatvalue",
+      "oversighthomescreen_oversighthomescreen",
+      "progressbar_progressbar",
+      "residenthomescreen_formattime",
+      "residenthomescreen_residenthomescreen",
+      "rolebadge_rolebadge",
+      "servicehomescreen_formattimestamp",
+      "servicehomescreen_getroledescription",
+      "servicehomescreen_getroletitle",
+      "servicehomescreen_getstatustone",
+      "servicehomescreen_gettodaycount",
+      "servicehomescreen_ppeprogress",
+      "servicehomescreen_servicehomescreen",
+      "serviceproofscreen_formattimestamp",
+      "serviceproofscreen_getprooftitle",
+      "serviceproofscreen_serviceproofscreen",
+      "src_components_guard_progressbar_tsx",
+      "src_components_guard_statuschip_tsx",
+      "src_components_shared_actionbutton_tsx",
+      "src_components_shared_infocard_tsx",
+      "src_components_shared_loadingscreen_tsx",
+      "src_components_shared_rolebadge_tsx",
+      "src_hooks_useapptheme_ts",
+      "src_navigation_hrmsnavigator_tsx",
+      "src_screens_guard_guardhomescreen_tsx",
+      "src_screens_hrms_hrmsleavescreen_tsx",
+      "src_screens_onboarding_biometricsetupscreen_tsx",
+      "src_screens_oversight_oversighthomescreen_tsx",
+      "src_screens_resident_residenthomescreen_tsx",
+      "src_screens_service_servicehomescreen_tsx",
+      "src_screens_service_serviceproofscreen_tsx",
+      "src_screens_supplier_supplierhomescreen_tsx",
+      "statuschip_statuschip",
+      "supplierhomescreen_formatvalue",
+      "supplierhomescreen_supplierhomescreen",
+      "useapptheme_useapptheme"
+    ],
+    "2": [
+      "mobilebackend_acknowledgemobilepanicalert",
+      "mobilebackend_approveresidentvisitor",
+      "mobilebackend_checkoutguardvisitor",
+      "mobilebackend_createguardvisitorentry",
+      "mobilebackend_createsignedmediaurl",
+      "mobilebackend_createuploadname",
+      "mobilebackend_decodebase64",
+      "mobilebackend_denyresidentvisitor",
+      "mobilebackend_fetchguardchecklistitems",
+      "mobilebackend_fetchguardvisitors",
+      "mobilebackend_fetchoversightalertfeed",
+      "mobilebackend_fetchoversightliveguards",
+      "mobilebackend_fetchoversightvisitorstats",
+      "mobilebackend_fetchresidentpendingvisitors",
+      "mobilebackend_ishttpurl",
+      "mobilebackend_ispreviewprofile",
+      "mobilebackend_normalizealertstatus",
+      "mobilebackend_normalizealerttype",
+      "mobilebackend_normalizeapprovalstatus",
+      "mobilebackend_normalizechecklistinputtype",
+      "mobilebackend_normalizeguardstatus",
+      "mobilebackend_parsedatauri",
+      "mobilebackend_parsestorageref",
+      "mobilebackend_resolvemobilepanicalert",
+      "mobilebackend_searchresidentdestinations",
+      "mobilebackend_setresidentfrequentvisitor",
+      "mobilebackend_startguardpanicalert",
+      "mobilebackend_submitguardchecklist",
+      "mobilebackend_throwiferror",
+      "mobilebackend_uploadprivateimage",
+      "src_lib_mobilebackend_ts"
+    ],
+    "3": [
+      "geofencecalibrationscreen_handlerefreshlocation",
+      "guardvisitorsscreen_formatapprovalcountdown",
+      "guardvisitorsscreen_formatvisitortimestamp",
+      "guardvisitorsscreen_geterrormessage",
+      "guardvisitorsscreen_handlecapturephoto",
+      "guardvisitorsscreen_handlecheckout",
+      "guardvisitorsscreen_handledestinationpick",
+      "guardvisitorsscreen_handlesavevisitor",
+      "guardvisitorsscreen_handleusetemplate",
+      "location_calculatedistancemeters",
+      "location_getcurrentlocationfix",
+      "location_requestgeofencepermissions",
+      "location_toradians",
+      "media_capturephoto",
+      "profilephotoscreen_handlecapture",
+      "profilephotoscreen_handlesave",
+      "src_lib_location_ts",
+      "src_lib_media_ts",
+      "src_lib_stagingautomation_ts",
+      "src_screens_guard_guardvisitorsscreen_tsx",
+      "src_screens_onboarding_profilephotoscreen_tsx",
+      "stagingautomation_buildassignedgeocalibration",
+      "stagingautomation_buildassignedlocationsnapshot",
+      "stagingautomation_getstagingautomationimageasset",
+      "stagingautomation_getstagingautomationimageuri",
+      "stagingautomation_isstagingautomationenabled",
+      "stagingautomation_isstagingautomationprofile"
+    ],
+    "4": [
+      "commercestorage_clearbuyerstate",
+      "commercestorage_clearsupplierstate",
+      "commercestorage_loadbuyerstate",
+      "commercestorage_loadjsonvalue",
+      "commercestorage_loadsupplierstate",
+      "commercestorage_savebuyerstate",
+      "commercestorage_savejsonvalue",
+      "commercestorage_savesupplierstate",
+      "src_lib_commercestorage_ts",
+      "src_store_usesupplierstore_ts",
+      "usesupplierstore_buildpersistedstate",
+      "usesupplierstore_createbillnumber",
+      "usesupplierstore_createdefaultbills",
+      "usesupplierstore_createdefaultindents",
+      "usesupplierstore_createdefaultpos",
+      "usesupplierstore_createdefaultstate",
+      "usesupplierstore_createid",
+      "usesupplierstore_createponumber",
+      "usesupplierstore_getsupplierrole",
+      "usesupplierstore_normalizehydratedstate",
+      "usesupplierstore_persistsupplierstore",
+      "usesupplierstore_sortposbycreatedat"
+    ],
+    "5": [
+      "geofencecalibrationscreen_handlecomplete",
+      "geofencecalibrationscreen_loadlocations",
+      "profile_asrole",
+      "profile_buildphonecandidates",
+      "profile_fetchcompanylocations",
+      "profile_fetchcurrentappprofile",
+      "profile_fileuritoblob",
+      "profile_findemployeebyemail",
+      "profile_findemployeebyname",
+      "profile_findemployeebyphone",
+      "profile_findemployeefallback",
+      "profile_inferfileextension",
+      "profile_isobject",
+      "profile_maplocation",
+      "profile_normalizepreferences",
+      "profile_normalizerolerelation",
+      "profile_savegeocalibrationtoprofile",
+      "profile_updateemployeeprofilephoto",
+      "profile_uploadprofilephoto",
+      "src_lib_profile_ts",
+      "src_screens_onboarding_geofencecalibrationscreen_tsx"
+    ],
+    "6": [
+      "auth_getdevpreviewcredentials",
+      "auth_getdevpreviewrole",
+      "auth_isdevpreviewotp",
+      "auth_isdevpreviewphone",
+      "auth_normalizephonenumber",
+      "auth_sendotp",
+      "auth_signinwithemailpassword",
+      "auth_signout",
+      "auth_verifyotp",
+      "emailloginscreen_handleemailsignin",
+      "loginscreen_loginscreen",
+      "otpscreen_handleresend",
+      "otpscreen_handleverify",
+      "otpscreen_maskphonenumber",
+      "src_lib_auth_ts",
+      "src_screens_auth_emailloginscreen_tsx",
+      "src_screens_auth_loginscreen_tsx",
+      "src_screens_auth_otpscreen_tsx"
+    ],
+    "7": [
+      "servicestorage_clearservicestate",
+      "servicestorage_loadservicestate",
+      "servicestorage_saveservicestate",
+      "src_lib_servicestorage_ts",
+      "src_store_useservicestore_ts",
+      "useservicestore_arerequiredppeitemscomplete",
+      "useservicestore_buildpersistedstate",
+      "useservicestore_createdefaultmaterialrequests",
+      "useservicestore_createdefaultstate",
+      "useservicestore_createdefaulttasks",
+      "useservicestore_createid",
+      "useservicestore_createppechecklist",
+      "useservicestore_getorderedservicetasks",
+      "useservicestore_getservicerole",
+      "useservicestore_isservicerole",
+      "useservicestore_normalizehydratedstate",
+      "useservicestore_persistservicestore",
+      "useservicestore_sorttasksbyassignedat"
+    ],
+    "8": [
+      "oversightstorage_clearoversightstate",
+      "oversightstorage_loadoversightstate",
+      "oversightstorage_saveoversightstate",
+      "src_lib_oversightstorage_ts",
+      "src_store_useoversightstore_ts",
+      "useoversightstore_buildpersistedstate",
+      "useoversightstore_createdefaultalerts",
+      "useoversightstore_createdefaultattendancelog",
+      "useoversightstore_createdefaultguards",
+      "useoversightstore_createdefaultstate",
+      "useoversightstore_createdefaulttickets",
+      "useoversightstore_createdefaultvisitorstats",
+      "useoversightstore_createid",
+      "useoversightstore_getoversightrole",
+      "useoversightstore_movelocation",
+      "useoversightstore_normalizehydratedstate",
+      "useoversightstore_normalizequantity",
+      "useoversightstore_persistoversightstore"
+    ],
+    "9": [
+      "2026_03_24_gsd_facilitypro_mobile_design_design_spec",
+      "2026_03_24_gsd_facilitypro_mobile_design_expo_react_native_stack",
+      "2026_03_24_gsd_facilitypro_mobile_design_mobile_specific_supabase_tables",
+      "2026_03_24_gsd_facilitypro_mobile_design_notification_routes",
+      "2026_03_24_gsd_facilitypro_mobile_design_p0_gsd_setup",
+      "2026_03_24_gsd_facilitypro_mobile_design_prevent_context_rot",
+      "2026_03_24_gsd_facilitypro_mobile_design_role_based_navigation",
+      "2026_03_24_gsd_facilitypro_mobile_design_supabase_backend",
+      "2026_03_24_p0_gsd_setup_facilitypro_mobile",
+      "2026_03_24_p0_gsd_setup_gsd",
+      "2026_03_24_p0_gsd_setup_gsd_persistent_memory_layer",
+      "2026_03_24_p0_gsd_setup_gsd_setup_implementation_plan",
+      "2026_03_24_p0_gsd_setup_project_md",
+      "2026_03_24_p0_gsd_setup_requirements_md",
+      "2026_03_24_p0_gsd_setup_roadmap_md",
+      "2026_03_24_p0_gsd_setup_schema_map_md",
+      "2026_03_24_p0_gsd_setup_state_md",
+      "2026_03_24_p0_gsd_setup_zero_reexplanation_future_sessions"
+    ],
+    "10": [
+      "notifications_buildnotificationrecord",
+      "notifications_configurenotificationchannels",
+      "notifications_createid",
+      "notifications_createpreviewnotification",
+      "notifications_fetchremotenotifications",
+      "notifications_getnotificationdefinition",
+      "notifications_getroutelabel",
+      "notifications_mapbackendnotificationrecord",
+      "notifications_mapbackendtypetoroute",
+      "notifications_markremotenotificationread",
+      "notifications_normalizebackendpriority",
+      "notifications_normalizepermissionstatus",
+      "notifications_persistremotedevicetoken",
+      "notifications_registerfordevicenotifications",
+      "notifications_schedulepreviewnotification",
+      "notifications_updateusernotificationpreference",
+      "src_lib_notifications_ts"
+    ],
+    "11": [
+      "guardstorage_clearguardstate",
+      "guardstorage_loadguardstate",
+      "guardstorage_saveguardstate",
+      "src_lib_guardstorage_ts",
+      "src_store_useguardstore_ts",
+      "useguardstore_buildpersistedstate",
+      "useguardstore_createdefaultchecklistitems",
+      "useguardstore_createdefaultemergencycontacts",
+      "useguardstore_createdefaultfrequentvisitors",
+      "useguardstore_createdefaultguardstate",
+      "useguardstore_createid",
+      "useguardstore_normalizehydratedstate",
+      "useguardstore_persistguardstore",
+      "useguardstore_reconcilequeuedstate",
+      "useguardstore_withqueue"
+    ],
+    "12": [
+      "src_store_usebuyerstore_ts",
+      "usebuyerstore_buildpersistedstate",
+      "usebuyerstore_createdefaultinvoices",
+      "usebuyerstore_createdefaultrequests",
+      "usebuyerstore_createdefaultstate",
+      "usebuyerstore_createid",
+      "usebuyerstore_createinvoicenumber",
+      "usebuyerstore_createrequestnumber",
+      "usebuyerstore_normalizehydratedstate",
+      "usebuyerstore_persistbuyerstore",
+      "usebuyerstore_sortrequestsbycreatedat"
+    ],
+    "13": [
+      "src_lib_storage_ts",
+      "storage_clearlastactivityat",
+      "storage_getprotecteditem",
+      "storage_loadlastactivityat",
+      "storage_loadlocalonboardingstate",
+      "storage_parseboolean",
+      "storage_savebiometricpreference",
+      "storage_savegeocalibration",
+      "storage_savelastactivityat",
+      "storage_setprotecteditem"
+    ],
+    "14": [
+      "notificationstorage_loadnotificationstate",
+      "notificationstorage_savenotificationstate",
+      "src_lib_notificationstorage_ts",
+      "src_store_usenotificationstore_ts",
+      "usenotificationstore_buildpersistedstate",
+      "usenotificationstore_createdefaultstate",
+      "usenotificationstore_mergeinbox",
+      "usenotificationstore_normalizehydratedstate",
+      "usenotificationstore_persistnotificationstore"
+    ],
+    "15": [
+      "appnavigator_appnavigator",
+      "appnavigator_getpendingonboardingstep",
+      "appnavigator_requiresgeocalibration",
+      "src_hooks_useappbootstrap_ts",
+      "src_hooks_usesessiontimeout_ts",
+      "src_navigation_appnavigator_tsx",
+      "useappbootstrap_useappbootstrap",
+      "usesessiontimeout_usesessiontimeout"
+    ],
+    "16": [
+      "guardchecklistscreen_formatcompletedat",
+      "guardchecklistscreen_handlecaptureevidence",
+      "guardchecklistscreen_handlenumericvaluechange",
+      "guardchecklistscreen_handlesubmit",
+      "guardchecklistscreen_handletoggle",
+      "guardchecklistscreen_ischecklistready",
+      "guardchecklistscreen_updateremotedraftitem",
+      "src_screens_guard_guardchecklistscreen_tsx"
+    ],
+    "17": [
+      "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "android_round_launcher_icon",
+      "blue_gradient_branding_round",
+      "concentric_ring_highlight",
+      "facilitypro_app_identity",
+      "primary_brand_mark_round_variant",
+      "soft_round_badge_background",
+      "stylized_arch_a_mark_round"
+    ],
+    "18": [
+      "abstract_letterform_a",
+      "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "android_launcher_icon_asset",
+      "built_environment_branding_cue",
+      "clean_geometric_ui_branding",
+      "facilitypro_brand_identity",
+      "light_grid_background",
+      "stylized_blue_arch_mark"
+    ],
+    "19": [
+      "oversightticketsscreen_formatvalue",
+      "oversightticketsscreen_getseveritytone",
+      "oversightticketsscreen_getstatustone",
+      "oversightticketsscreen_gettypelabel",
+      "oversightticketsscreen_handlecreateticket",
+      "oversightticketsscreen_parsenumericvalue",
+      "src_screens_oversight_oversightticketsscreen_tsx"
+    ],
+    "20": [
+      "servicetasksscreen_formattimestamp",
+      "servicetasksscreen_getproofsummary",
+      "servicetasksscreen_getstatustone",
+      "servicetasksscreen_handleadvancedelivery",
+      "servicetasksscreen_handlecomplete",
+      "servicetasksscreen_handlestart",
+      "src_screens_service_servicetasksscreen_tsx"
+    ],
+    "21": [
+      "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "android_launcher_icon",
+      "app_home_screen_identity",
+      "blue_gradient_branding",
+      "brand_primary_app_mark",
+      "soft_circular_badge_background",
+      "stylized_arch_a_mark"
+    ],
+    "22": [
+      "android_adaptive_launcher_foreground",
+      "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "blue_gradient_glyph",
+      "geometric_construction_guides",
+      "launcher_icon_brand_identity",
+      "precision_engineered_branding",
+      "stylized_arch_a_mark_foreground"
+    ],
+    "23": [
+      "android_app_src_main_java_com_facilitypro_mobile_mainactivity_kt",
+      "mainactivity_mainactivity",
+      "mainactivity_mainactivity_createreactactivitydelegate",
+      "mainactivity_mainactivity_getmaincomponentname",
+      "mainactivity_mainactivity_invokedefaultonbackpressed",
+      "mainactivity_mainactivity_oncreate"
+    ],
+    "24": [
+      "oversightoperationsscreen_formatvalue",
+      "oversightoperationsscreen_getattendancetone",
+      "oversightoperationsscreen_getgeotone",
+      "oversightoperationsscreen_getguardtone",
+      "oversightoperationsscreen_handlerefresh",
+      "src_screens_oversight_oversightoperationsscreen_tsx"
+    ],
+    "25": [
+      "biometriclockscreen_handleunlock",
+      "biometrics_getbiometriccapability",
+      "biometrics_getbiometriclabel",
+      "biometrics_promptforbiometricunlock",
+      "src_lib_biometrics_ts",
+      "src_screens_auth_biometriclockscreen_tsx"
+    ],
+    "26": [
+      "src_store_useappstore_ts",
+      "useappstore_createdevpreviewgeocalibration",
+      "useappstore_createdevpreviewidentity",
+      "useappstore_createdevpreviewprofile",
+      "useappstore_createdevpreviewsession",
+      "useappstore_getpersistedsession"
+    ],
+    "27": [
+      "android_app_src_main_res_mipmap_hdpi_ic_launcher_round_webp",
+      "ic_launcher_round_blue_gradient_arch_mark",
+      "ic_launcher_round_minimal_enterprise_ui_branding",
+      "ic_launcher_round_pale_circular_background",
+      "ic_launcher_round_round_app_launcher_icon",
+      "ic_launcher_round_stylized_letter_a_branding"
+    ],
+    "28": [
+      "src_screens_supplier_supplierbillingscreen_tsx",
+      "supplierbillingscreen_formatvalue",
+      "supplierbillingscreen_getbilltone",
+      "supplierbillingscreen_getpaymenttone",
+      "supplierbillingscreen_handlesubmitbill"
+    ],
+    "29": [
+      "servicematerialsscreen_formattimestamp",
+      "servicematerialsscreen_getrolecopy",
+      "servicematerialsscreen_getstatustone",
+      "servicematerialsscreen_handlesubmit",
+      "src_screens_service_servicematerialsscreen_tsx"
+    ],
+    "30": [
+      "android_app_src_main_java_com_facilitypro_mobile_mainapplication_kt",
+      "mainapplication_mainapplication",
+      "mainapplication_mainapplication_onconfigurationchanged",
+      "mainapplication_mainapplication_oncreate"
+    ],
+    "31": [
+      "oversightalertsscreen_formatvalue",
+      "oversightalertsscreen_handleacknowledge",
+      "oversightalertsscreen_handleresolve",
+      "src_screens_oversight_oversightalertsscreen_tsx"
+    ],
+    "32": [
+      "src_screens_supplier_supplierordersscreen_tsx",
+      "supplierordersscreen_formatvalue",
+      "supplierordersscreen_getstatustone",
+      "supplierordersscreen_handledispatch"
+    ],
+    "33": [
+      "buyerinvoicesscreen_formatvalue",
+      "buyerinvoicesscreen_getpaymenttone",
+      "buyerinvoicesscreen_getstatustone",
+      "src_screens_buyer_buyerinvoicesscreen_tsx"
+    ],
+    "34": [
+      "buyerrequestsscreen_formatvalue",
+      "buyerrequestsscreen_getstatustone",
+      "buyerrequestsscreen_handlecreaterequest",
+      "src_screens_buyer_buyerrequestsscreen_tsx"
+    ],
+    "35": [
+      "homescreen_colorswatch",
+      "homescreen_homescreen",
+      "src_screens_homescreen_tsx"
+    ],
+    "36": [
+      "residentapprovalsscreen_formatcountdown",
+      "residentapprovalsscreen_refreshvisitors",
+      "src_screens_resident_residentapprovalsscreen_tsx"
+    ],
+    "37": [
+      "hrmsattendancescreen_formatdatelabel",
+      "hrmsattendancescreen_formattimelabel",
+      "src_screens_hrms_hrmsattendancescreen_tsx"
+    ],
+    "38": [
+      "src_screens_supplier_supplierindentsscreen_tsx",
+      "supplierindentsscreen_formatvalue",
+      "supplierindentsscreen_getstatustone"
+    ],
+    "39": [
+      "guardcontactsscreen_formatvalue",
+      "guardcontactsscreen_handledial",
+      "src_screens_guard_guardcontactsscreen_tsx"
+    ],
+    "40": [
+      "buyerfeedbackscreen_formatvalue",
+      "buyerfeedbackscreen_handlesubmit",
+      "src_screens_buyer_buyerfeedbackscreen_tsx"
+    ],
+    "41": [
+      "buyerhomescreen_formatvalue",
+      "buyerhomescreen_handlerefresh",
+      "src_screens_buyer_buyerhomescreen_tsx"
+    ],
+    "42": [
+      "notificationinboxcard_formattimestamp",
+      "notificationinboxcard_getroutelabel",
+      "src_components_shared_notificationinboxcard_tsx"
+    ],
+    "43": [
+      "claude_graph_report",
+      "claude_graphify",
+      "claude_graphify_update"
+    ],
+    "44": [
+      "app_app",
+      "app_tsx"
+    ],
+    "45": [
+      "appproviders_appproviders",
+      "src_providers_appproviders_tsx"
+    ],
+    "46": [
+      "notificationprovider_notificationprovider",
+      "src_providers_notificationprovider_tsx"
+    ],
+    "47": [
+      "rolenavigator_rolenavigator",
+      "src_navigation_rolenavigator_tsx"
+    ],
+    "48": [
+      "onboardingnavigator_onboardingnavigator",
+      "src_navigation_onboardingnavigator_tsx"
+    ],
+    "49": [
+      "authnavigator_authnavigator",
+      "src_navigation_authnavigator_tsx"
+    ],
+    "50": [
+      "residentnotificationsscreen_residentnotificationsscreen",
+      "src_screens_resident_residentnotificationsscreen_tsx"
+    ],
+    "51": [
+      "hrmspayslipsscreen_formatmonthlabel",
+      "src_screens_hrms_hrmspayslipsscreen_tsx"
+    ],
+    "52": [
+      "hrmshomescreen_formatdatelabel",
+      "src_screens_hrms_hrmshomescreen_tsx"
+    ],
+    "53": [
+      "liveguardboard_gettonecolor",
+      "src_components_oversight_liveguardboard_tsx"
+    ],
+    "54": [
+      "babel_config_js"
+    ],
+    "55": [
+      "index_ts"
+    ],
+    "56": [
+      "src_types_hrms_ts"
+    ],
+    "57": [
+      "src_types_guard_ts"
+    ],
+    "58": [
+      "src_types_notifications_ts"
+    ],
+    "59": [
+      "src_types_app_ts"
+    ],
+    "60": [
+      "src_types_resident_ts"
+    ],
+    "61": [
+      "src_types_service_ts"
+    ],
+    "62": [
+      "src_types_commerce_ts"
+    ],
+    "63": [
+      "src_types_oversight_ts"
+    ],
+    "64": [
+      "src_constants_colors_ts"
+    ],
+    "65": [
+      "src_constants_statuscolors_ts"
+    ],
+    "66": [
+      "src_constants_shadows_ts"
+    ],
+    "67": [
+      "src_constants_index_ts"
+    ],
+    "68": [
+      "src_constants_typography_ts"
+    ],
+    "69": [
+      "src_constants_spacing_ts"
+    ],
+    "70": [
+      "src_navigation_buyernavigator_tsx"
+    ],
+    "71": [
+      "src_navigation_suppliernavigator_tsx"
+    ],
+    "72": [
+      "src_navigation_types_ts"
+    ],
+    "73": [
+      "src_navigation_servicenavigator_tsx"
+    ],
+    "74": [
+      "src_navigation_oversightnavigator_tsx"
+    ],
+    "75": [
+      "src_navigation_guardnavigator_tsx"
+    ],
+    "76": [
+      "src_navigation_residentnavigator_tsx"
+    ],
+    "77": [
+      "src_screens_app_rolelandingscreen_tsx"
+    ],
+    "78": [
+      "src_screens_hrms_hrmsdocumentsscreen_tsx"
+    ],
+    "79": [
+      "src_components_shared_formfield_tsx"
+    ],
+    "80": [
+      "src_components_shared_screenshell_tsx"
+    ],
+    "81": [
+      "src_components_guard_metriccard_tsx"
+    ],
+    "82": [
+      "src_lib_supabase_ts"
+    ]
+  },
+  "cohesion": {
+    "0": 0.11,
+    "1": 0.04,
+    "2": 0.12,
+    "3": 0.1,
+    "4": 0.14,
+    "5": 0.17,
+    "6": 0.17,
+    "7": 0.17,
+    "8": 0.17,
+    "9": 0.16,
+    "10": 0.18,
+    "11": 0.19,
+    "12": 0.25,
+    "13": 0.27,
+    "14": 0.28,
+    "15": 0.32,
+    "16": 0.39,
+    "17": 0.29,
+    "18": 0.29,
+    "19": 0.33,
+    "20": 0.29,
+    "21": 0.33,
+    "22": 0.33,
+    "23": 0.33,
+    "24": 0.33,
+    "25": 0.4,
+    "26": 0.47,
+    "27": 0.53,
+    "28": 0.4,
+    "29": 0.4,
+    "30": 0.5,
+    "31": 0.5,
+    "32": 0.5,
+    "33": 0.5,
+    "34": 0.5,
+    "35": 0.67,
+    "36": 0.67,
+    "37": 0.67,
+    "38": 0.67,
+    "39": 0.67,
+    "40": 0.67,
+    "41": 0.67,
+    "42": 0.67,
+    "43": 0.67,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0,
+    "60": 1.0,
+    "61": 1.0,
+    "62": 1.0,
+    "63": 1.0,
+    "64": 1.0,
+    "65": 1.0,
+    "66": 1.0,
+    "67": 1.0,
+    "68": 1.0,
+    "69": 1.0,
+    "70": 1.0,
+    "71": 1.0,
+    "72": 1.0,
+    "73": 1.0,
+    "74": 1.0,
+    "75": 1.0,
+    "76": 1.0,
+    "77": 1.0,
+    "78": 1.0,
+    "79": 1.0,
+    "80": 1.0,
+    "81": 1.0,
+    "82": 1.0
+  },
+  "gods": [
+    {
+      "id": "useapptheme_useapptheme",
+      "label": "useAppTheme()",
+      "degree": 18
+    },
+    {
+      "id": "mobilebackend_throwiferror",
+      "label": "throwIfError()",
+      "degree": 17
+    },
+    {
+      "id": "hrms_ispreviewprofile",
+      "label": "isPreviewProfile()",
+      "degree": 15
+    },
+    {
+      "id": "hrms_recordhrmsattendance",
+      "label": "recordHrmsAttendance()",
+      "degree": 11
+    },
+    {
+      "id": "2026_03_24_p0_gsd_setup_gsd_setup_implementation_plan",
+      "label": "P0 GSD Setup Implementation Plan",
+      "degree": 10
+    },
+    {
+      "id": "hrms_createlocalid",
+      "label": "createLocalId()",
+      "degree": 9
+    },
+    {
+      "id": "hrms_getstoragekey",
+      "label": "getStorageKey()",
+      "degree": 9
+    },
+    {
+      "id": "2026_03_24_gsd_facilitypro_mobile_design_design_spec",
+      "label": "GSD and FacilityPro Mobile Design Spec",
+      "degree": 9
+    },
+    {
+      "id": "hrms_fetchhrmsleavesnapshot",
+      "label": "fetchHrmsLeaveSnapshot()",
+      "degree": 8
+    },
+    {
+      "id": "useoversightstore_createdefaultstate",
+      "label": "createDefaultState()",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "handleSave()",
+      "target": "uploadProfilePhoto()",
+      "source_files": [
+        "src/screens/onboarding/ProfilePhotoScreen.tsx",
+        "src/lib/profile.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities; peripheral node `handleSave()` unexpectedly reaches hub `uploadProfilePhoto()`"
+    },
+    {
+      "source": "fetchRemoteNotifications()",
+      "target": "isPreviewProfile()",
+      "source_files": [
+        "src/lib/notifications.ts",
+        "src/lib/hrms.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities; peripheral node `fetchRemoteNotifications()` unexpectedly reaches hub `isPreviewProfile()`"
+    },
+    {
+      "source": "P0 GSD Setup",
+      "target": "P0 GSD Setup Implementation Plan",
+      "source_files": [
+        "docs/superpowers/specs/2026-03-24-gsd-facilitypro-mobile-design.md",
+        "docs/superpowers/plans/2026-03-24-p0-gsd-setup.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; semantically similar concepts with no structural link; peripheral node `P0 GSD Setup` unexpectedly reaches hub `P0 GSD Setup Implementation Plan`"
+    },
+    {
+      "source": "AppNavigator()",
+      "target": "useAppTheme()",
+      "source_files": [
+        "src/navigation/AppNavigator.tsx",
+        "src/hooks/useAppTheme.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "AppNavigator()",
+      "target": "useAppBootstrap()",
+      "source_files": [
+        "src/navigation/AppNavigator.tsx",
+        "src/hooks/useAppBootstrap.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `useAppBootstrap()` unexpectedly reaches hub `AppNavigator()`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `Stylized arch or letter-A mark` and `Primary app brand mark`?",
+      "why": "Edge tagged AMBIGUOUS (relation: may_function_as) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `Stylized arch or letter-A mark` and `Primary brand mark round variant`?",
+      "why": "Edge tagged AMBIGUOUS (relation: may_function_as) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `Geometric construction guide motif` and `Precision-engineered branding`?",
+      "why": "Edge tagged AMBIGUOUS (relation: may_signal) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `Stylized blue arch-like mark` and `Abstract letterform resembling A`?",
+      "why": "Edge tagged AMBIGUOUS (relation: may_resemble) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `ic_launcher_round.webp` and `Stylized Letter A Branding`?",
+      "why": "Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `Blue Gradient Arch Mark` and `Stylized Letter A Branding`?",
+      "why": "Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `isPreviewProfile()` connect `Applyleavebalances Buildpreviewattendancerecords Buildpreviewdocuments` to `Actionbutton Biometricsetupscreen Formattimestamp`, `Buildnotificationrecord Configurenotificationchannels Createid`?",
+      "why": "High betweenness centrality (0.092) - this node is a cross-community bridge."
+    }
+  ]
+}

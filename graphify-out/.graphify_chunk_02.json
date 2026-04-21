@@ -1,0 +1,126 @@
+{
+  "nodes": [
+    {
+      "id": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "label": "ic_launcher.webp",
+      "file_type": "image",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "android_launcher_icon",
+      "label": "Android launcher icon",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "stylized_arch_a_mark",
+      "label": "Stylized arch or letter-A mark",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "blue_gradient_branding",
+      "label": "Blue gradient branding",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "soft_circular_badge_background",
+      "label": "Soft circular badge background",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "app_home_screen_identity",
+      "label": "App home screen identity",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "brand_primary_app_mark",
+      "label": "Primary app brand mark",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image"
+    }
+  ],
+  "edges": [
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "android_launcher_icon",
+      "relation": "serves_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "stylized_arch_a_mark",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "blue_gradient_branding",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "soft_circular_badge_background",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.93,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "app_home_screen_identity",
+      "relation": "supports",
+      "confidence": "INFERRED",
+      "confidence_score": 0.98,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_webp",
+      "target": "brand_primary_app_mark",
+      "relation": "represents",
+      "confidence": "INFERRED",
+      "confidence_score": 0.89,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "stylized_arch_a_mark",
+      "target": "brand_primary_app_mark",
+      "relation": "may_function_as",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.66,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

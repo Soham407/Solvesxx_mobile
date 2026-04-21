@@ -1,0 +1,143 @@
+{
+  "nodes": [
+    {
+      "id": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "label": "ic_launcher_round.webp",
+      "file_type": "image",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "android_round_launcher_icon",
+      "label": "Android round launcher icon",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "stylized_arch_a_mark_round",
+      "label": "Stylized arch or letter-A mark",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "blue_gradient_branding_round",
+      "label": "Blue gradient branding",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "soft_round_badge_background",
+      "label": "Soft round badge background",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "concentric_ring_highlight",
+      "label": "Concentric ring highlight",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "facilitypro_app_identity",
+      "label": "FacilityPro app identity",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "primary_brand_mark_round_variant",
+      "label": "Primary brand mark round variant",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image"
+    }
+  ],
+  "edges": [
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "android_round_launcher_icon",
+      "relation": "serves_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "stylized_arch_a_mark_round",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.92,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "blue_gradient_branding_round",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "soft_round_badge_background",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.96,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "concentric_ring_highlight",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.87,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "facilitypro_app_identity",
+      "relation": "supports",
+      "confidence": "INFERRED",
+      "confidence_score": 0.98,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_round_webp",
+      "target": "primary_brand_mark_round_variant",
+      "relation": "represents",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "stylized_arch_a_mark_round",
+      "target": "primary_brand_mark_round_variant",
+      "relation": "may_function_as",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.67,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "source_location": "image",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

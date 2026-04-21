@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { Clock3, ShieldCheck, ShieldX } from 'lucide-react-native';
 
 import { StatusChip } from '../../components/guard/StatusChip';
 import { ActionButton } from '../../components/shared/ActionButton';
+import { FormField } from '../../components/shared/FormField';
 import { InfoCard } from '../../components/shared/InfoCard';
 import { ScreenShell } from '../../components/shared/ScreenShell';
 import { BorderRadius, Spacing } from '../../constants/spacing';
@@ -55,6 +56,9 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   const denyPreviewVisitor = useGuardStore((state) => state.denyVisitor);
   const setPreviewFrequentVisitor = useGuardStore((state) => state.setVisitorFrequent);
   const [message, setMessage] = useState<string | null>(null);
+  const [denyModalOpen, setDenyModalOpen] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState<ResidentPendingVisitor | null>(null);
+  const [denyReason, setDenyReason] = useState('');
 
   const visitorsQuery = useQuery({
     queryKey: ['resident', 'pending-visitors', profile?.userId],
@@ -88,19 +92,22 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   });
 
   const denyMutation = useMutation({
-    mutationFn: async (visitorId: string) => {
+    mutationFn: async (input: { visitorId: string; reason: string }) => {
       if (previewMode) {
-        return denyPreviewVisitor(visitorId, 'Declined from resident mobile app');
+        return denyPreviewVisitor(input.visitorId, input.reason);
       }
 
       if (!profile?.userId) {
         throw new Error('Resident profile is missing');
       }
 
-      return denyResidentVisitor(visitorId, profile.userId, 'Declined from resident mobile app');
+      return denyResidentVisitor(input.visitorId, profile.userId, input.reason);
     },
     onSuccess: async () => {
       setMessage('Visitor denied successfully.');
+      setDenyModalOpen(false);
+      setSelectedVisitor(null);
+      setDenyReason('');
       await refreshVisitors();
     },
   });
@@ -155,16 +162,40 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
     [previewMode, previewVisitorLog, visitorsQuery.data],
   );
 
+  const openDenyModal = (visitor: ResidentPendingVisitor) => {
+    setSelectedVisitor(visitor);
+    setDenyReason(visitor.rejectionReason ?? '');
+    setDenyModalOpen(true);
+  };
+
+  const submitDeny = async () => {
+    if (!selectedVisitor) {
+      return;
+    }
+
+    const reason = denyReason.trim();
+
+    if (!reason) {
+      setMessage('Add a reason before denying the visitor.');
+      return;
+    }
+
+    await denyMutation.mutateAsync({
+      visitorId: selectedVisitor.id,
+      reason,
+    });
+  };
+
   return (
     <ScreenShell
       eyebrow="Gate Approval"
-      title="Resident visitor decisions"
-      description="Approve or deny gate entries from the resident side and keep trusted visitors marked for quicker repeat access."
+      title="Visitor approvals"
+      description="Review guests waiting at your gate and make a quick decision."
     >
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Approval queue</Text>
         <Text style={[styles.copy, { color: colors.mutedForeground }]}>
-          Live visitor requests from the guard desk appear here with the active 30-second decision window.
+          Each request stays here until you approve it, deny it, or the decision window expires.
         </Text>
         {message ? (
           <Text style={[styles.message, { color: colors.primary }]} testID="qa_resident_approvals_message">
@@ -185,7 +216,7 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
                   {visitor.visitorName}
                 </Text>
                 <Text style={[styles.copy, { color: colors.mutedForeground }]}>
-                  {visitor.flatLabel} | {visitor.purpose}
+                  {visitor.flatLabel} · {visitor.purpose}
                 </Text>
               </View>
               <StatusChip
@@ -223,7 +254,7 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
             <View style={styles.actionGroup}>
               <ActionButton
-                label={approveMutation.isPending ? 'Approving...' : 'Approve visitor'}
+                label={approveMutation.isPending ? 'Approving...' : 'Approve'}
                 disabled={
                   approveMutation.isPending ||
                   visitor.approvalStatus !== 'pending'
@@ -232,19 +263,19 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
                 onPress={() => approveMutation.mutate(visitor.id)}
               />
               <ActionButton
-                label={denyMutation.isPending ? 'Denying...' : 'Deny visitor'}
+                label={denyMutation.isPending ? 'Denying...' : 'Deny'}
                 variant="danger"
                 disabled={denyMutation.isPending || visitor.approvalStatus !== 'pending'}
                 testID={`qa_resident_deny_visitor_${index}`}
-                onPress={() => denyMutation.mutate(visitor.id)}
+                onPress={() => openDenyModal(visitor)}
               />
               <ActionButton
                 label={
                   frequentMutation.isPending
                     ? 'Saving...'
                     : visitor.isFrequentVisitor
-                      ? 'Remove frequent'
-                      : 'Mark frequent'
+                      ? 'Remove trusted'
+                      : 'Mark trusted'
                 }
                 variant="ghost"
                 testID={`qa_resident_mark_frequent_${index}`}
@@ -257,12 +288,6 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
               />
             </View>
 
-            <View style={styles.inlineMeta}>
-              <ShieldCheck color={colors.success} size={16} />
-              <Text style={[styles.copy, { color: colors.mutedForeground }]}>
-                Approvals update the guard-side status in real time.
-              </Text>
-            </View>
             {visitor.rejectionReason ? (
               <View style={styles.inlineMeta}>
                 <ShieldX color={colors.destructive} size={16} />
@@ -277,10 +302,65 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
         <InfoCard>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>No pending entries</Text>
           <Text style={[styles.copy, { color: colors.mutedForeground }]}>
-            Fresh gate approvals will appear here as soon as the guard desk creates them.
+            New gate requests will appear here when security sends them to you.
           </Text>
         </InfoCard>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={denyModalOpen}
+        onRequestClose={() => setDenyModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Deny visitor</Text>
+            <Text style={[styles.copy, { color: colors.mutedForeground }]}>
+              Tell security why this guest should not be allowed in.
+            </Text>
+
+            <View style={styles.reasonPresetRow}>
+              {['Not expecting this visitor', 'Please call me first', 'Try again later'].map((option) => (
+                <Pressable
+                  key={option}
+                  accessibilityRole="button"
+                  onPress={() => setDenyReason(option)}
+                  style={[
+                    styles.reasonPreset,
+                    {
+                      backgroundColor: denyReason === option ? colors.primary + '12' : colors.background,
+                      borderColor: denyReason === option ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.reasonPresetLabel, { color: colors.foreground }]}>{option}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <FormField
+              label="Reason"
+              helperText="This note will be shown to security."
+              multiline
+              numberOfLines={4}
+              onChangeText={setDenyReason}
+              style={styles.multilineInput}
+              value={denyReason}
+            />
+
+            <View style={styles.modalActions}>
+              <ActionButton label="Cancel" variant="ghost" onPress={() => setDenyModalOpen(false)} />
+              <ActionButton
+                label={denyMutation.isPending ? 'Denying...' : 'Confirm denial'}
+                variant="danger"
+                disabled={denyMutation.isPending}
+                onPress={() => void submitDeny()}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenShell>
   );
 }
@@ -333,5 +413,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.sm,
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    padding: Spacing.lg,
+  },
+  modalCard: {
+    borderRadius: BorderRadius['2xl'],
+    borderWidth: 1,
+    gap: Spacing.base,
+    padding: Spacing.xl,
+  },
+  modalTitle: {
+    fontFamily: FontFamily.headingBold,
+    fontSize: FontSize.xl,
+  },
+  reasonPresetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  reasonPreset: {
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+  reasonPresetLabel: {
+    fontFamily: FontFamily.sansMedium,
+    fontSize: FontSize.sm,
+  },
+  multilineInput: {
+    minHeight: 112,
+    paddingTop: Spacing.base,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.base,
   },
 });

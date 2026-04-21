@@ -24,6 +24,8 @@ interface NotificationInboxCardProps {
   description?: string;
   actions?: NotificationAction[];
   maxItems?: number;
+  endUserMode?: boolean;
+  emptyStateCopy?: string;
 }
 
 function formatTimestamp(value: string) {
@@ -40,6 +42,8 @@ export function NotificationInboxCard({
   description = 'Notification records are stored here so each role can track live delivery state alongside local previews when needed.',
   actions = [],
   maxItems = 3,
+  endUserMode = false,
+  emptyStateCopy = 'No notifications have been captured for this workspace yet.',
 }: NotificationInboxCardProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
@@ -68,9 +72,11 @@ export function NotificationInboxCard({
         <View style={styles.copyWrap}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>{description}</Text>
-          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-            Push permission: {permissionStatus}
-          </Text>
+          {!endUserMode ? (
+            <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+              Push permission: {permissionStatus}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.counterWrap}>
           <Text style={[styles.counterValue, { color: colors.foreground }]}>{unreadCount}</Text>
@@ -108,15 +114,26 @@ export function NotificationInboxCard({
             <View style={styles.copyWrap}>
               <Text style={[styles.notificationTitle, { color: colors.foreground }]}>{item.title}</Text>
               <Text style={[styles.caption, { color: colors.foreground }]}>{item.body}</Text>
-              <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>
-                {getRouteLabel(item.route)} | {item.priority} | {formatTimestamp(item.createdAt)}
-              </Text>
-              <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>
-                {item.deliveryModes.join(' + ')}
-                {item.fallbackState !== 'not_applicable'
-                  ? ` | SMS fallback ${item.fallbackState.replace(/_/g, ' ')}`
-                  : ''}
-              </Text>
+              {endUserMode ? (
+                <View style={styles.endUserMetaRow}>
+                  <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>
+                    {formatTimestamp(item.createdAt)}
+                  </Text>
+                  <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>Tap to mark as read</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>
+                    {getRouteLabel(item.route)} | {item.priority} | {formatTimestamp(item.createdAt)}
+                  </Text>
+                  <Text style={[styles.metaLine, { color: colors.mutedForeground }]}>
+                    {item.deliveryModes.join(' + ')}
+                    {item.fallbackState !== 'not_applicable'
+                      ? ` | SMS fallback ${item.fallbackState.replace(/_/g, ' ')}`
+                      : ''}
+                  </Text>
+                </>
+              )}
             </View>
             <Text
               style={[
@@ -130,7 +147,7 @@ export function NotificationInboxCard({
         ))
       ) : (
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-          No notifications have been captured for this workspace yet.
+          {emptyStateCopy}
         </Text>
       )}
 
@@ -195,6 +212,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     lineHeight: 18,
     textTransform: 'capitalize',
+  },
+  endUserMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   unreadBadge: {
     fontFamily: FontFamily.sansSemiBold,

@@ -1,0 +1,143 @@
+{
+  "nodes": [
+    {
+      "id": "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "label": "ic_launcher.webp",
+      "file_type": "image",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "android_launcher_icon_asset",
+      "label": "Android launcher icon asset",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "stylized_blue_arch_mark",
+      "label": "Stylized blue arch-like mark",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "light_grid_background",
+      "label": "Light background with faint grid lines",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "facilitypro_brand_identity",
+      "label": "FacilityPro brand identity",
+      "file_type": "brand",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "built_environment_branding_cue",
+      "label": "Built-environment branding cue",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "clean_geometric_ui_branding",
+      "label": "Clean geometric UI branding",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "abstract_letterform_a",
+      "label": "Abstract letterform resembling A",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image"
+    }
+  ],
+  "edges": [
+    {
+      "source": "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "target": "android_launcher_icon_asset",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "target": "stylized_blue_arch_mark",
+      "relation": "shows_visual_element",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "target": "light_grid_background",
+      "relation": "shows_visual_element",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_hdpi_ic_launcher_webp",
+      "target": "facilitypro_brand_identity",
+      "relation": "represents_brand",
+      "confidence": "INFERRED",
+      "confidence_score": 0.94,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_launcher_icon_asset",
+      "target": "facilitypro_brand_identity",
+      "relation": "serves_as_entrypoint_brand_asset_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.96,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "stylized_blue_arch_mark",
+      "target": "built_environment_branding_cue",
+      "relation": "suggests",
+      "confidence": "INFERRED",
+      "confidence_score": 0.79,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "light_grid_background",
+      "target": "clean_geometric_ui_branding",
+      "relation": "suggests",
+      "confidence": "INFERRED",
+      "confidence_score": 0.76,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "stylized_blue_arch_mark",
+      "target": "abstract_letterform_a",
+      "relation": "may_resemble",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.58,
+      "source_file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "source_location": "image",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

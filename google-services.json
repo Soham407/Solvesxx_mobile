@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675663268881",
+    "project_id": "facilitypro-81bde",
+    "storage_bucket": "facilitypro-81bde.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675663268881:android:d0574443ce8424ceef75b0",
+        "android_client_info": {
+          "package_name": "com.facilitypro.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9C78ZQ24pUmb_z9-DSzLb0fKfcLzu4TE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

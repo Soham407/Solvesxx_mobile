@@ -13,12 +13,13 @@ export function ResidentNotificationsScreen(_props: ResidentNotificationsScreenP
   return (
     <ScreenShell
       eyebrow="Resident Alerts"
-      title="Notification history"
-      description="Track gate approvals, pest-control advisories, and the rest of your resident-facing alert stream from one inbox."
+      title="Alerts and updates"
+      description="Review gate decisions and community updates in one place."
     >
       <NotificationInboxCard
-        title="Resident notification inbox"
-        description="This inbox is powered by the live backend notification table and remains available even if push permission is denied."
+        title="Recent updates"
+        description="Visitor decisions, building alerts, and important notices appear here."
+        endUserMode
         maxItems={12}
       />
     </ScreenShell>

@@ -1,0 +1,126 @@
+{
+  "nodes": [
+    {
+      "id": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "label": "ic_launcher_foreground.webp",
+      "file_type": "image",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "android_adaptive_launcher_foreground",
+      "label": "Android adaptive launcher foreground",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "stylized_arch_a_mark_foreground",
+      "label": "Stylized arch or letter-A mark",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "blue_gradient_glyph",
+      "label": "Blue gradient glyph",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "geometric_construction_guides",
+      "label": "Geometric construction guide motif",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "launcher_icon_brand_identity",
+      "label": "Launcher icon brand identity",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    },
+    {
+      "id": "precision_engineered_branding",
+      "label": "Precision-engineered branding",
+      "file_type": "concept",
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image"
+    }
+  ],
+  "edges": [
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "target": "android_adaptive_launcher_foreground",
+      "relation": "serves_as",
+      "confidence": "INFERRED",
+      "confidence_score": 0.99,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "target": "stylized_arch_a_mark_foreground",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.93,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "target": "blue_gradient_glyph",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "target": "geometric_construction_guides",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.88,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "android_app_src_main_res_mipmap_mdpi_ic_launcher_foreground_webp",
+      "target": "launcher_icon_brand_identity",
+      "relation": "supports",
+      "confidence": "INFERRED",
+      "confidence_score": 0.97,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "stylized_arch_a_mark_foreground",
+      "target": "launcher_icon_brand_identity",
+      "relation": "represents",
+      "confidence": "INFERRED",
+      "confidence_score": 0.87,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    },
+    {
+      "source": "geometric_construction_guides",
+      "target": "precision_engineered_branding",
+      "relation": "may_signal",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.69,
+      "source_file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp",
+      "source_location": "image",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}
