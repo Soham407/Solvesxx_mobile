@@ -29,6 +29,7 @@ export type OversightTabParamList = {
   OversightAlerts: undefined;
   OversightOperations: undefined;
   OversightTickets: undefined;
+  OversightAnnouncements: undefined;
 };
 
 export type GuardTabParamList = {
@@ -41,6 +42,8 @@ export type GuardTabParamList = {
 export type ResidentTabParamList = {
   ResidentHome: undefined;
   ResidentApprovals: undefined;
+  ResidentVisitors: undefined;
+  ResidentCommunity: undefined;
   ResidentNotifications: undefined;
 };
 

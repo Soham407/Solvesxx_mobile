@@ -205,6 +205,7 @@ function createDevPreviewProfile(session: Session, role: AppRole): AppUserProfil
     role,
     fullName: identity.fullName,
     phone: session.user.phone ?? identity.phone,
+    societyId: role === 'resident' || role === 'society_manager' ? 'dev-preview-society' : null,
     isActive: true,
     preferences: {
       previewMode: true,

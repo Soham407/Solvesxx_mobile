@@ -30,6 +30,21 @@ function normalizePreferences(value: unknown) {
   return isObject(value) ? value : {};
 }
 
+function readSocietyPreference(preferences: unknown) {
+  if (!isObject(preferences)) {
+    return null;
+  }
+
+  const value =
+    typeof preferences.society_id === 'string'
+      ? preferences.society_id
+      : typeof preferences.societyId === 'string'
+        ? preferences.societyId
+        : null;
+
+  return value?.trim() ? value.trim() : null;
+}
+
 type EmployeeRow = {
   employee_code: string;
   first_name: string;
@@ -234,6 +249,7 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
   }
 
   let assignedLocation: LocationSummary | null = null;
+  let societyId: string | null = null;
 
   if (guardRow?.assigned_location_id) {
     const { data } = await supabase
@@ -245,6 +261,49 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
     if (data) {
       assignedLocation = mapLocation(data);
     }
+  }
+
+  if (employeeRow?.id) {
+    const { data } = await supabase
+      .from('security_guards')
+      .select('society_id')
+      .eq('employee_id', employeeRow.id)
+      .maybeSingle();
+
+    if (typeof data?.society_id === 'string' && data.society_id.trim().length > 0) {
+      societyId = data.society_id.trim();
+    }
+  }
+
+  if (!societyId) {
+    const { data } = await supabase
+      .from('residents')
+      .select('flat:flats(building:buildings(society_id))')
+      .eq('auth_user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const residentSocietyId =
+      data &&
+      typeof data === 'object' &&
+      'flat' in data &&
+      data.flat &&
+      typeof data.flat === 'object' &&
+      'building' in data.flat &&
+      data.flat.building &&
+      typeof data.flat.building === 'object' &&
+      'society_id' in data.flat.building &&
+      typeof data.flat.building.society_id === 'string'
+        ? data.flat.building.society_id
+        : null;
+
+    if (residentSocietyId?.trim()) {
+      societyId = residentSocietyId.trim();
+    }
+  }
+
+  if (!societyId) {
+    societyId = readSocietyPreference(userRow?.preferences);
   }
 
   const derivedFullName =
@@ -260,6 +319,7 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
     role,
     fullName: derivedFullName || null,
     phone: userRow?.phone ?? employeeRow?.phone ?? user.phone ?? null,
+    societyId,
     isActive: userRow?.is_active !== false,
     preferences: normalizePreferences(userRow?.preferences),
     employeeId: employeeRow?.id ?? userRow?.employee_id ?? null,

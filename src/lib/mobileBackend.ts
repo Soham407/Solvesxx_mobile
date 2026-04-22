@@ -13,6 +13,10 @@ import type { ResidentPendingVisitor } from '../types/resident';
 
 const VISITOR_MEDIA_BUCKET = 'visitor-photos';
 const GUARD_SECURE_MEDIA_BUCKET = 'guard-secure-media';
+
+// Signed URLs are valid for 1 hour; cache for 50 min to avoid redundant storage calls on each poll cycle.
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const SIGNED_URL_TTL_MS = 50 * 60 * 1000;
 const ATTENDANCE_SELFIES_BUCKET = 'attendance-selfies';
 const CHECKLIST_EVIDENCE_BUCKET = 'checklist-evidence';
 
@@ -93,12 +97,20 @@ async function createSignedMediaUrl(value: string | null) {
     return null;
   }
 
+  const cacheKey = `${ref.bucket}/${ref.path}`;
+  const cached = signedUrlCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
+  }
+
   const { data, error } = await supabase.storage.from(ref.bucket).createSignedUrl(ref.path, 60 * 60);
 
   if (error) {
     return null;
   }
 
+  signedUrlCache.set(cacheKey, { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_TTL_MS });
   return data.signedUrl;
 }
 
@@ -592,6 +604,253 @@ export async function setResidentFrequentVisitor(visitorId: string, isFrequent: 
   throwIfError(error);
   return data as { success?: boolean; error?: string } | null;
 }
+
+// ─── Resident: Invite, History, Service Requests, Announcements ───────────────
+
+async function getResidentRecord(): Promise<{ id: string; flatId: string } | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('residents')
+    .select('id, flat_id')
+    .eq('auth_user_id', user.id)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data?.id || !data?.flat_id) return null;
+  return { id: String(data.id), flatId: String(data.flat_id) };
+}
+
+export async function inviteResidentVisitor(payload: {
+  visitorName: string;
+  visitorType: string;
+  phone?: string;
+  purpose?: string;
+  vehicleNumber?: string;
+}) {
+  const { data, error } = await supabase.rpc('create_resident_invited_visitor' as any, {
+    p_visitor_name: payload.visitorName,
+    p_visitor_type: payload.visitorType,
+    p_phone: payload.phone ?? null,
+    p_purpose: payload.purpose ?? null,
+    p_vehicle_number: payload.vehicleNumber ?? null,
+  });
+
+  throwIfError(error);
+  return data as { success?: boolean; error?: string } | null;
+}
+
+export interface ResidentVisitorHistoryEntry {
+  id: string;
+  visitorName: string;
+  visitorType: string | null;
+  phone: string | null;
+  purpose: string | null;
+  entryTime: string | null;
+  exitTime: string | null;
+  approvedByResident: boolean | null;
+  vehicleNumber: string | null;
+  photoUrl: string | null;
+}
+
+export async function fetchResidentVisitorHistory(): Promise<ResidentVisitorHistoryEntry[]> {
+  const resident = await getResidentRecord();
+  if (!resident) return [];
+
+  const { data, error } = await supabase
+    .from('visitors')
+    .select(
+      'id, visitor_name, visitor_type, phone, purpose, entry_time, exit_time, approved_by_resident, vehicle_number, photo_url',
+    )
+    .eq('resident_id', resident.id)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  throwIfError(error);
+
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    id: String(row.id),
+    visitorName: row.visitor_name ? String(row.visitor_name) : 'Visitor',
+    visitorType: row.visitor_type ? String(row.visitor_type) : null,
+    phone: row.phone ? String(row.phone) : null,
+    purpose: row.purpose ? String(row.purpose) : null,
+    entryTime: row.entry_time ? String(row.entry_time) : null,
+    exitTime: row.exit_time ? String(row.exit_time) : null,
+    approvedByResident:
+      typeof row.approved_by_resident === 'boolean' ? row.approved_by_resident : null,
+    vehicleNumber: row.vehicle_number ? String(row.vehicle_number) : null,
+    photoUrl: row.photo_url ? String(row.photo_url) : null,
+  }));
+}
+
+export async function createResidentServiceRequest(payload: {
+  title: string;
+  description: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+}) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase.from('service_requests').insert({
+    title: payload.title,
+    description: payload.description,
+    priority: payload.priority,
+    requester_id: user.id,
+    created_by: user.id,
+    status: 'open',
+  } as any);
+
+  throwIfError(error);
+  return { success: true };
+}
+
+export interface ResidentCompanyEvent {
+  id: string;
+  title: string;
+  eventDate: string;
+  venue: string | null;
+  category: string | null;
+  description: string | null;
+}
+
+async function getCurrentSocietyId(): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+
+  const { data: residentData } = await supabase
+    .from('residents')
+    .select('flat:flats(building:buildings(society_id))')
+    .eq('auth_user_id', user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  const residentSocietyId =
+    residentData &&
+    typeof residentData === 'object' &&
+    'flat' in residentData &&
+    residentData.flat &&
+    typeof residentData.flat === 'object' &&
+    'building' in residentData.flat &&
+    residentData.flat.building &&
+    typeof residentData.flat.building === 'object' &&
+    'society_id' in residentData.flat.building &&
+    typeof residentData.flat.building.society_id === 'string'
+      ? residentData.flat.building.society_id
+      : null;
+
+  if (residentSocietyId?.trim()) {
+    return residentSocietyId.trim();
+  }
+
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('employee_id, preferences')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (userRow?.employee_id) {
+    const { data: guardData } = await supabase
+      .from('security_guards')
+      .select('society_id')
+      .eq('employee_id', userRow.employee_id)
+      .maybeSingle();
+
+    if (typeof guardData?.society_id === 'string' && guardData.society_id.trim().length > 0) {
+      return guardData.society_id.trim();
+    }
+  }
+
+  if (userRow?.preferences && typeof userRow.preferences === 'object' && !Array.isArray(userRow.preferences)) {
+    const preferenceSocietyId =
+      typeof userRow.preferences.society_id === 'string'
+        ? userRow.preferences.society_id
+        : typeof userRow.preferences.societyId === 'string'
+          ? userRow.preferences.societyId
+          : null;
+
+    if (preferenceSocietyId?.trim()) {
+      return preferenceSocietyId.trim();
+    }
+  }
+
+  return null;
+}
+
+export async function fetchResidentCompanyEvents(): Promise<ResidentCompanyEvent[]> {
+  const today = new Date().toISOString().split('T')[0];
+  const societyId = await getCurrentSocietyId();
+
+  if (!societyId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('company_events')
+    .select('id, title, event_date, venue, category, description')
+    .eq('is_active', true)
+    .eq('society_id', societyId)
+    .gte('event_date', today)
+    .order('event_date', { ascending: true })
+    .limit(20);
+
+  throwIfError(error);
+
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    id: String(row.id),
+    title: row.title ? String(row.title) : 'Event',
+    eventDate: String(row.event_date),
+    venue: row.venue ? String(row.venue) : null,
+    category: row.category ? String(row.category) : null,
+    description: row.description ? String(row.description) : null,
+  }));
+}
+
+export async function createSocietyAnnouncement(payload: {
+  title: string;
+  description: string;
+  eventDate?: string | null;
+}) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  const societyId = await getCurrentSocietyId();
+  if (!societyId) {
+    throw new Error('Your account is not linked to a society.');
+  }
+
+  const normalizedEventDate =
+    payload.eventDate && payload.eventDate.trim().length > 0
+      ? payload.eventDate.trim()
+      : new Date().toISOString().split('T')[0];
+
+  const { error } = await supabase.from('company_events').insert({
+    title: payload.title.trim(),
+    description: payload.description.trim(),
+    event_date: normalizedEventDate,
+    society_id: societyId,
+    created_by: user.id,
+    is_active: true,
+  } as any);
+
+  throwIfError(error);
+
+  return { success: true };
+}
+
+// ─── Oversight ────────────────────────────────────────────────────────────────
 
 export async function fetchOversightLiveGuards() {
   const { data, error } = await supabase.rpc('get_oversight_live_guards');

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, ClipboardList, House, ShieldAlert } from 'lucide-react-native';
+import { Bell, ClipboardList, House, Megaphone, ShieldAlert } from 'lucide-react-native';
 
 import { LoadingScreen } from '../components/shared/LoadingScreen';
 import { Spacing } from '../constants/spacing';
@@ -10,6 +10,7 @@ import { OversightAlertsScreen } from '../screens/oversight/OversightAlertsScree
 import { OversightHomeScreen } from '../screens/oversight/OversightHomeScreen';
 import { OversightOperationsScreen } from '../screens/oversight/OversightOperationsScreen';
 import { OversightTicketsScreen } from '../screens/oversight/OversightTicketsScreen';
+import { PostAnnouncementScreen } from '../screens/societyManager/PostAnnouncementScreen';
 import { useAppStore } from '../store/useAppStore';
 import { useOversightStore } from '../store/useOversightStore';
 import type { OversightTabParamList } from './types';
@@ -61,6 +62,10 @@ export function OversightNavigator() {
             return <ShieldAlert color={color} size={size} />;
           }
 
+          if (route.name === 'OversightAnnouncements') {
+            return <Megaphone color={color} size={size} />;
+          }
+
           return <House color={color} size={size} />;
         },
       })}
@@ -85,6 +90,13 @@ export function OversightNavigator() {
         name="OversightTickets"
         options={{ title: 'Tickets', tabBarButtonTestID: 'qa_oversight_tab_tickets' }}
       />
+      {profile?.role === 'society_manager' ? (
+        <Tab.Screen
+          component={PostAnnouncementScreen}
+          name="OversightAnnouncements"
+          options={{ title: 'Post Notice', tabBarButtonTestID: 'qa_oversight_tab_announcements' }}
+        />
+      ) : null}
     </Tab.Navigator>
   );
 }

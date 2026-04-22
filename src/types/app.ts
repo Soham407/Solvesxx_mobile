@@ -54,6 +54,7 @@ export interface AppUserProfile {
   role: AppRole | null;
   fullName: string | null;
   phone: string | null;
+  societyId: string | null;
   isActive: boolean;
   preferences: Record<string, unknown>;
   employeeId: string | null;
