@@ -361,23 +361,24 @@ export async function recordGuardAttendanceAction(input: {
     return { synced: false };
   }
 
-  const selfiePath = await uploadPrivateImage({
-    bucket: ATTENDANCE_SELFIES_BUCKET,
-    prefix: `guard-attendance/${employeeId}`,
-    uri: input.photoUri,
-  });
-
   const logDate = toIsoDate();
   const now = new Date().toISOString();
 
-  const { data: existingRow, error: existingError } = await supabase
-    .from('attendance_logs')
-    .select(
-      'id, check_in_time, check_out_time, check_in_location_id, check_out_location_id, check_in_latitude, check_in_longitude, check_out_latitude, check_out_longitude, check_in_selfie_url',
-    )
-    .eq('employee_id', employeeId)
-    .eq('log_date', logDate)
-    .maybeSingle();
+  const [selfiePath, { data: existingRow, error: existingError }] = await Promise.all([
+    uploadPrivateImage({
+      bucket: ATTENDANCE_SELFIES_BUCKET,
+      prefix: `guard-attendance/${employeeId}`,
+      uri: input.photoUri,
+    }),
+    supabase
+      .from('attendance_logs')
+      .select(
+        'id, check_in_time, check_out_time, check_in_location_id, check_out_location_id, check_in_latitude, check_in_longitude, check_out_latitude, check_out_longitude, check_in_selfie_url',
+      )
+      .eq('employee_id', employeeId)
+      .eq('log_date', logDate)
+      .maybeSingle(),
+  ]);
 
   throwIfError(existingError);
 

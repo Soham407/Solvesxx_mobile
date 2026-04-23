@@ -97,7 +97,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     queryKey: ['guard', 'visitors', profile?.userId],
     queryFn: () => fetchGuardVisitors(true),
     enabled: Boolean(profile?.userId) && !usePreviewFlow,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 
   const pendingVisitors = useMemo(
@@ -160,12 +160,10 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
       withinGeoFence,
     };
 
-    await rememberLocation(snapshot);
-    await recordGuardGpsTracking({
-      profile,
-      location: snapshot,
-      batteryLevel: null,
-    });
+    await Promise.all([
+      rememberLocation(snapshot),
+      recordGuardGpsTracking({ profile, location: snapshot, batteryLevel: null }),
+    ]);
     return snapshot;
   }
 
@@ -192,13 +190,12 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     setMessage(null);
 
     try {
-      const location = await buildLocationSnapshot();
-      const photo = usePreviewFlow
-        ? { uri: 'qa://guard-preview-selfie' }
-        : await capturePhoto({
-            cameraType: 'front',
-            aspect: [1, 1],
-          });
+      const [location, photo] = await Promise.all([
+        buildLocationSnapshot(),
+        usePreviewFlow
+          ? Promise.resolve({ uri: 'qa://guard-preview-selfie' })
+          : capturePhoto({ cameraType: 'front', aspect: [1, 1] }),
+      ]);
 
       if (!photo) {
         setMessage('Attendance capture was cancelled before the selfie was saved.');
@@ -330,7 +327,14 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     setMessage(null);
 
     try {
-      const location = await buildLocationSnapshot();
+      const isRealCapture = !usePreviewFlow && !(isStagingAutomationEnabled() && isStagingAutomationProfile(profile));
+
+      const [location, photo] = await Promise.all([
+        buildLocationSnapshot(),
+        isRealCapture
+          ? capturePhoto({ cameraType: 'front', aspect: [1, 1] })
+          : Promise.resolve(null),
+      ]);
 
       if (usePreviewFlow) {
         await submitSosAlert({
@@ -351,11 +355,6 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
         });
         return;
       }
-
-      const photo = await capturePhoto({
-        cameraType: 'front',
-        aspect: [1, 1],
-      });
 
       if (!photo) {
         setMessage('SOS capture was cancelled before evidence was recorded.');
@@ -401,6 +400,11 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
 
   const openSosFlow = () => {
     if (isBusy) {
+      return;
+    }
+
+    if (dutyStatus === 'off_duty') {
+      setMessage('You must clock in before triggering an SOS alert.');
       return;
     }
 
@@ -522,7 +526,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
       </InfoCard>
 
       <PanicButton
-        disabled={isBusy}
+        disabled={isBusy || dutyStatus === 'off_duty'}
         onPress={openSosFlow}
         testID="qa_guard_sos_trigger"
         colors={colors}

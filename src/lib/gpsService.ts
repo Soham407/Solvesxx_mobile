@@ -88,6 +88,12 @@ export function startGeofenceExitMonitoring(
   const GRACE_PERIOD_MS = 30000; // 30 seconds
   const AUTO_PUNCHOUT_MS = 120000; // 2 minutes
 
+  // TODO (future): Add "Request Break" feature — guard taps to temporarily pause geofence
+  // monitoring for a supervisor-approved duration (e.g. shop run, prayers, errand).
+  // Flow: guard submits reason + estimated duration → supervisor notified → monitoring
+  // pauses for that window → auto-resumes after. Without this, any absence > 2 min
+  // triggers an unintended auto punch-out.
+
   let exitDetectedAt: number | null = null;
 
   state.geofenceMonitorInterval = setInterval(async () => {
