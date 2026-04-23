@@ -1,13 +1,15 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, DoorOpen, House } from 'lucide-react-native';
+import { Bell, DoorOpen, House, Megaphone, Users } from 'lucide-react-native';
 
 import { Spacing } from '../constants/spacing';
 import { FontFamily, FontSize } from '../constants/typography';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { ResidentRealtimeProvider } from '../providers/ResidentRealtimeProvider';
 import { ResidentApprovalsScreen } from '../screens/resident/ResidentApprovalsScreen';
+import { ResidentCommunityScreen } from '../screens/resident/ResidentCommunityScreen';
 import { ResidentHomeScreen } from '../screens/resident/ResidentHomeScreen';
 import { ResidentNotificationsScreen } from '../screens/resident/ResidentNotificationsScreen';
+import { ResidentVisitorsScreen } from '../screens/resident/ResidentVisitorsScreen';
 import type { ResidentTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<ResidentTabParamList>();
@@ -40,6 +42,14 @@ export function ResidentNavigator() {
               return <DoorOpen color={color} size={size} />;
             }
 
+            if (route.name === 'ResidentVisitors') {
+              return <Users color={color} size={size} />;
+            }
+
+            if (route.name === 'ResidentCommunity') {
+              return <Megaphone color={color} size={size} />;
+            }
+
             if (route.name === 'ResidentNotifications') {
               return <Bell color={color} size={size} />;
             }
@@ -57,6 +67,16 @@ export function ResidentNavigator() {
           component={ResidentApprovalsScreen}
           name="ResidentApprovals"
           options={{ title: 'Approvals', tabBarButtonTestID: 'qa_resident_tab_approvals' }}
+        />
+        <Tab.Screen
+          component={ResidentVisitorsScreen}
+          name="ResidentVisitors"
+          options={{ title: 'Visitors', tabBarButtonTestID: 'qa_resident_tab_visitors' }}
+        />
+        <Tab.Screen
+          component={ResidentCommunityScreen}
+          name="ResidentCommunity"
+          options={{ title: 'Community', tabBarButtonTestID: 'qa_resident_tab_community' }}
         />
         <Tab.Screen
           component={ResidentNotificationsScreen}

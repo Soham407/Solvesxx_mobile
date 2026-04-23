@@ -67,7 +67,7 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
     queryKey: ['resident', 'pending-visitors', profile?.userId],
     queryFn: fetchResidentPendingVisitors,
     enabled: Boolean(profile?.userId) && !previewMode,
-    refetchInterval: 10000,
+    refetchInterval: hasLiveSync ? false : 30000,
   });
 
   const refreshVisitors = async () => {

@@ -47,7 +47,7 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
     queryKey: ['resident', 'pending-visitors', profile?.userId],
     queryFn: fetchResidentPendingVisitors,
     enabled: Boolean(profile?.userId) && !previewMode,
-    refetchInterval: 15000,
+    refetchInterval: hasLiveSync ? false : 30000,
   });
 
   const pendingVisitors = useMemo(
