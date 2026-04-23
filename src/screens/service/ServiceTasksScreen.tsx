@@ -7,6 +7,7 @@ import { StatusChip } from '../../components/guard/StatusChip';
 import { ActionButton } from '../../components/shared/ActionButton';
 import { InfoCard } from '../../components/shared/InfoCard';
 import { ScreenShell } from '../../components/shared/ScreenShell';
+import { Toast } from '../../components/shared/Toast';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -67,16 +68,15 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
   const startTask = useServiceStore((state) => state.startTask);
   const advanceDeliveryTask = useServiceStore((state) => state.advanceDeliveryTask);
   const completeTask = useServiceStore((state) => state.completeTask);
-  const [message, setMessage] = useState<string | null>(null);
-
   const orderedTasks = useMemo(() => getOrderedServiceTasks(tasks), [tasks]);
+  const [toast, setToast] = useState<string | null>(null);
 
   const handleStart = async (task: ServiceTaskRecord) => {
     const result = await startTask(task.id);
-    setMessage(
+    setToast(
       result.started
         ? task.taskType === 'delivery'
-          ? `${task.referenceCode} marked as picked up and ready for transit.`
+          ? `${task.referenceCode} picked up and ready for transit.`
           : `${task.referenceCode} is now live in the field workspace.`
         : result.reason ?? 'The task could not be started right now.',
     );
@@ -88,20 +88,20 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
       task.status === 'picked_up'
         ? `${task.referenceCode} moved into in-transit status.`
         : `${task.referenceCode} was delivered and closed.`;
-
-    setMessage(result.advanced ? nextMessage : result.reason ?? 'Delivery status could not change.');
+    setToast(result.advanced ? nextMessage : result.reason ?? 'Delivery status could not change.');
   };
 
   const handleComplete = async (task: ServiceTaskRecord) => {
     const result = await completeTask(task.id);
-    setMessage(
+    setToast(
       result.completed
-        ? `${task.referenceCode} was completed and marked ready for manager follow-up.`
+        ? `${task.referenceCode} completed and ready for manager follow-up.`
         : result.reason ?? 'The task could not be completed right now.',
     );
   };
 
   return (
+    <>
     <ScreenShell
       eyebrow="Service Tasks"
       title="Assigned jobs and field progression"
@@ -117,11 +117,6 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
           </View>
           <ClipboardList color={colors.primary} size={22} />
         </View>
-        {message ? (
-          <Text style={[styles.caption, { color: colors.primary }]} testID="qa_service_tasks_message">
-            {message}
-          </Text>
-        ) : null}
       </InfoCard>
 
       <InfoCard>
@@ -213,6 +208,8 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
         )}
       </InfoCard>
     </ScreenShell>
+    <Toast message={toast} onDismiss={() => setToast(null)} />
+    </>
   );
 }
 
