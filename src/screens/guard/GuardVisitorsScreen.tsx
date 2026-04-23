@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { Camera, Car, MapPin, UserRound } from 'lucide-react-native';
+import { AlertTriangle, Camera, Car, MapPin, UserRound } from 'lucide-react-native';
 
 import { StatusChip } from '../../components/guard/StatusChip';
 import { ActionButton } from '../../components/shared/ActionButton';
@@ -85,6 +85,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
   const frequentVisitors = useGuardStore((state) => state.frequentVisitors);
   const previewVisitorLog = useGuardStore((state) => state.visitorLog);
   const isOfflineMode = useGuardStore((state) => state.isOfflineMode);
+  const dutyStatus = useGuardStore((state) => state.dutyStatus);
   const addVisitor = useGuardStore((state) => state.addVisitor);
   const checkoutVisitor = useGuardStore((state) => state.checkoutVisitor);
 
@@ -110,7 +111,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
     queryKey: ['guard', 'visitors', profile?.userId],
     queryFn: () => fetchGuardVisitors(true),
     enabled: Boolean(profile?.userId) && !usePreviewFlow,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 
   const checkoutMutation = useMutation({
@@ -179,6 +180,11 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
   };
 
   const handleSaveVisitor = async () => {
+    if (dutyStatus === 'off_duty') {
+      setMessage('You must clock in before logging a visitor.');
+      return;
+    }
+
     if (!form.name.trim() || !form.phone.trim() || !form.destination.trim() || !form.purpose.trim()) {
       setMessage('Visitor name, phone, destination, and purpose are required.');
       return;
@@ -226,10 +232,6 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
 
         await queryClient.invalidateQueries({
           queryKey: ['guard', 'visitors', profile?.userId],
-        });
-        await queryClient.fetchQuery({
-          queryKey: ['guard', 'visitors', profile?.userId],
-          queryFn: () => fetchGuardVisitors(true),
         });
 
         setMessage('Visitor logged and resident approval has been triggered.');
@@ -285,11 +287,26 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
         <ActionButton
           label={isSaving ? 'Logging visitor...' : 'Log visitor entry'}
           loading={isSaving}
+          disabled={dutyStatus === 'off_duty'}
           testID="qa_guard_save_visitor"
           onPress={() => void handleSaveVisitor()}
         />
       }
     >
+      {dutyStatus === 'off_duty' ? (
+        <InfoCard>
+          <View style={styles.warnRow}>
+            <AlertTriangle color={colors.warning} size={18} />
+            <View style={styles.warnCopy}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>You are off duty</Text>
+              <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+                Return to the home screen and clock in before your shift actions are recorded.
+              </Text>
+            </View>
+          </View>
+        </InfoCard>
+      ) : null}
+
       {usePreviewFlow ? (
         <InfoCard>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Frequent visitors</Text>
@@ -328,70 +345,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
             })}
           </View>
         </InfoCard>
-      ) : (
-        <InfoCard>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Resident lookup</Text>
-          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-            Start with the flat or resident so the approval request goes to the right household the first time.
-          </Text>
-          {destinationsQuery.data?.length ? (
-            <View style={styles.destinationWrap}>
-              {destinationsQuery.data.slice(0, 5).map((destination, index) => {
-                const isSelected = destination.flatId === selectedDestination?.flatId;
-
-                return (
-                  <Pressable
-                    key={destination.flatId}
-                    onPress={() => handleDestinationPick(destination)}
-                    testID={`qa_guard_destination_result_${index}`}
-                    style={[
-                      styles.destinationCard,
-                      {
-                        backgroundColor: isSelected ? colors.primary : colors.secondary,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <View style={styles.inlineMeta}>
-                      <MapPin
-                        color={isSelected ? colors.primaryForeground : colors.primary}
-                        size={16}
-                      />
-                      <Text
-                        testID={`qa_guard_destination_title_${index}`}
-                        style={[
-                          styles.destinationTitle,
-                          {
-                            color: isSelected ? colors.primaryForeground : colors.foreground,
-                          },
-                        ]}
-                      >
-                        {destination.flatLabel}
-                      </Text>
-                    </View>
-                    <Text
-                      testID={`qa_guard_destination_subtitle_${index}`}
-                      style={[
-                        styles.caption,
-                        {
-                          color: isSelected ? colors.primaryForeground : colors.mutedForeground,
-                        },
-                      ]}
-                    >
-                      {destination.residentName ?? 'Primary resident pending'} |{' '}
-                      {destination.residentPhone ?? 'Phone pending'}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : form.destination.trim().length >= 2 ? (
-            <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-              No resident lookup results yet for this search.
-            </Text>
-          ) : null}
-        </InfoCard>
-      )}
+      ) : null}
 
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>New visitor entry</Text>
@@ -408,6 +362,43 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
           placeholder={usePreviewFlow ? 'Tower A - Flat 304' : 'Search building, flat, or resident'}
           value={form.destination}
         />
+        {!usePreviewFlow && !selectedDestination && !!destinationsQuery.data?.length ? (
+          <View style={[styles.dropdownList, { borderColor: colors.border }]}>
+            {destinationsQuery.data.slice(0, 5).map((destination, index) => (
+              <Pressable
+                key={destination.flatId}
+                onPress={() => handleDestinationPick(destination)}
+                testID={`qa_guard_destination_result_${index}`}
+                style={[
+                  styles.dropdownItem,
+                  index > 0 && styles.dropdownItemDivider,
+                  index > 0 && { borderTopColor: colors.border },
+                ]}
+              >
+                <View style={styles.inlineMeta}>
+                  <MapPin color={colors.primary} size={14} />
+                  <Text
+                    testID={`qa_guard_destination_title_${index}`}
+                    style={[styles.destinationTitle, { color: colors.foreground }]}
+                  >
+                    {destination.flatLabel}
+                  </Text>
+                </View>
+                <Text
+                  testID={`qa_guard_destination_subtitle_${index}`}
+                  style={[styles.caption, { color: colors.mutedForeground }]}
+                >
+                  {destination.residentName ?? 'Primary resident pending'} |{' '}
+                  {destination.residentPhone ?? 'Phone pending'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : !usePreviewFlow && !selectedDestination && form.destination.trim().length >= 2 ? (
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            No resident lookup results yet for this search.
+          </Text>
+        ) : null}
         <FormField
           label="Visitor name"
           inputTestID="qa_guard_visitor_name"
@@ -558,6 +549,15 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  warnRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  warnCopy: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
   sectionTitle: {
     fontFamily: FontFamily.sansBold,
     fontSize: FontSize.lg,
@@ -581,6 +581,19 @@ const styles = StyleSheet.create({
   templateLabel: {
     fontFamily: FontFamily.sansSemiBold,
     fontSize: FontSize.sm,
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  dropdownItemDivider: {
+    borderTopWidth: 1,
   },
   destinationWrap: {
     gap: Spacing.sm,

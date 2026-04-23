@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { Camera, CheckCircle2, ClipboardList, Hash } from 'lucide-react-native';
+import { AlertTriangle, Camera, CheckCircle2, ClipboardList, Hash, Info } from 'lucide-react-native';
 
 import { ProgressBar } from '../../components/guard/ProgressBar';
 import { StatusChip } from '../../components/guard/StatusChip';
@@ -10,6 +10,7 @@ import { ActionButton } from '../../components/shared/ActionButton';
 import { FormField } from '../../components/shared/FormField';
 import { InfoCard } from '../../components/shared/InfoCard';
 import { ScreenShell } from '../../components/shared/ScreenShell';
+import { Toast } from '../../components/shared/Toast';
 import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -58,6 +59,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
   const previewChecklistItems = useGuardStore((state) => state.checklistItems);
   const previewChecklistSubmittedAt = useGuardStore((state) => state.checklistSubmittedAt);
   const isOfflineMode = useGuardStore((state) => state.isOfflineMode);
+  const dutyStatus = useGuardStore((state) => state.dutyStatus);
   const toggleChecklistItem = useGuardStore((state) => state.toggleChecklistItem);
   const attachChecklistEvidence = useGuardStore((state) => state.attachChecklistEvidence);
   const submitPreviewChecklist = useGuardStore((state) => state.submitChecklist);
@@ -73,6 +75,8 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
   const [draftItems, setDraftItems] = useState<GuardChecklistItem[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [infoVisible, setInfoVisible] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!usePreviewFlow && remoteChecklistQuery.data) {
@@ -129,6 +133,11 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
   };
 
   const handleToggle = async (itemId: string) => {
+    if (dutyStatus === 'off_duty') {
+      setMessage('You must clock in before completing checklist items.');
+      return;
+    }
+
     const item = checklistItems.find((entry) => entry.id === itemId);
 
     if (!item || checklistSubmittedAt) {
@@ -146,21 +155,26 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
 
     setMessage(null);
 
+    const becomingComplete = item.status === 'pending';
+
     if (usePreviewFlow) {
       await toggleChecklistItem(itemId);
-      return;
+    } else {
+      updateRemoteDraftItem(itemId, (current) => {
+        const isCompleted = current.status === 'completed';
+
+        return {
+          ...current,
+          completedAt: isCompleted ? null : new Date().toISOString(),
+          responseValue: isCompleted ? null : 'yes',
+          status: isCompleted ? 'pending' : 'completed',
+        };
+      });
     }
 
-    updateRemoteDraftItem(itemId, (current) => {
-      const isCompleted = current.status === 'completed';
-
-      return {
-        ...current,
-        completedAt: isCompleted ? null : new Date().toISOString(),
-        responseValue: isCompleted ? null : 'yes',
-        status: isCompleted ? 'pending' : 'completed',
-      };
-    });
+    if (becomingComplete) {
+      setToast(`"${item.title}" marked complete.`);
+    }
   };
 
   const handleCaptureEvidence = async (itemId: string) => {
@@ -258,6 +272,7 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
   };
 
   return (
+    <>
     <ScreenShell
       eyebrow="Daily Operations"
       title="Guard Checklist"
@@ -272,12 +287,26 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
                 : 'Submit and lock checklist'
           }
           loading={submitMutation.isPending}
-          disabled={Boolean(checklistSubmittedAt) || (!usePreviewFlow && !isChecklistReady(checklistItems))}
+          disabled={dutyStatus === 'off_duty' || Boolean(checklistSubmittedAt) || (!usePreviewFlow && !isChecklistReady(checklistItems))}
           testID="qa_guard_checklist_submit"
           onPress={() => void handleSubmit()}
         />
       }
     >
+      {dutyStatus === 'off_duty' ? (
+        <InfoCard>
+          <View style={styles.warnRow}>
+            <AlertTriangle color={colors.warning} size={18} />
+            <View style={styles.warnCopy}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>You are off duty</Text>
+              <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+                Return to the home screen and clock in before your shift actions are recorded.
+              </Text>
+            </View>
+          </View>
+        </InfoCard>
+      ) : null}
+
       <InfoCard>
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
@@ -286,10 +315,15 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
               {completedCount} of {checklistItems.length} tasks complete
             </Text>
           </View>
-          <StatusChip
-            label={checklistSubmittedAt ? 'Locked' : usePreviewFlow ? 'Preview mode' : 'In progress'}
-            tone={checklistSubmittedAt ? 'success' : usePreviewFlow ? 'warning' : 'info'}
-          />
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => setInfoVisible(true)} hitSlop={10} testID="qa_guard_checklist_info">
+              <Info color={colors.mutedForeground} size={18} />
+            </Pressable>
+            <StatusChip
+              label={checklistSubmittedAt ? 'Locked' : usePreviewFlow ? 'Preview mode' : 'In progress'}
+              tone={checklistSubmittedAt ? 'success' : usePreviewFlow ? 'warning' : 'info'}
+            />
+          </View>
         </View>
         <ProgressBar value={progress} />
         {message ? (
@@ -304,12 +338,19 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         ) : null}
       </InfoCard>
 
-      <InfoCard>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>How to finish this round</Text>
-        <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-          Finish the pending items first. If a task asks for photo proof, capture it before marking the task complete.
-        </Text>
-      </InfoCard>
+      <Modal transparent animationType="fade" visible={infoVisible}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setInfoVisible(false)}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>How to finish this round</Text>
+            <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+              Finish the pending items first. If a task asks for photo proof, capture it before marking the task complete.
+            </Text>
+            <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+              Tap anywhere outside to close.
+            </Text>
+          </View>
+        </Pressable>
+      </Modal>
 
       {orderedChecklistItems.map((item, index) => (
         <InfoCard key={item.id}>
@@ -423,18 +464,49 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         </InfoCard>
       ))}
     </ScreenShell>
+    <Toast message={toast} onDismiss={() => setToast(null)} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  warnRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  warnCopy: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: Spacing.base,
   },
   headerCopy: {
     flex: 1,
     gap: Spacing.xs,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing.xl,
+    gap: Spacing.base,
+    width: '100%',
   },
   sectionTitle: {
     fontFamily: FontFamily.sansBold,
