@@ -23,6 +23,7 @@ export function GeoFenceCalibrationScreen() {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
   const completeGeoCalibration = useAppStore((state) => state.completeGeoCalibration);
+  const skipGeoCalibration = useAppStore((state) => state.skipGeoCalibration);
   const [locations, setLocations] = useState<Array<Awaited<ReturnType<typeof fetchCompanyLocations>>[number]>>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<GeoPermissionState | null>(null);
@@ -155,6 +156,30 @@ export function GeoFenceCalibrationScreen() {
     }
   };
 
+  const handleSkip = async () => {
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    const skipLocation = selectedLocation ?? profile?.assignedLocation;
+
+    try {
+      await skipGeoCalibration({
+        calibratedAt: new Date().toISOString(),
+        latitude: skipLocation?.latitude ?? 0,
+        locationId: skipLocation?.id ?? 'skipped-geo-calibration',
+        locationName: skipLocation?.locationName ?? 'Skipped for now',
+        longitude: skipLocation?.longitude ?? 0,
+        radius: skipLocation?.geoFenceRadius ?? 50,
+      });
+    } catch (error) {
+      const nextMessage =
+        error instanceof Error ? error.message : 'We could not skip geo-fence calibration.';
+      setErrorMessage(nextMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <ScreenShell
       eyebrow="Location setup"
@@ -174,6 +199,13 @@ export function GeoFenceCalibrationScreen() {
             loading={isSaving}
             disabled={!canComplete}
             onPress={() => void handleComplete()}
+          />
+          <ActionButton
+            label="Skip for now"
+            testID="qa_onboarding_geo_skip"
+            variant="ghost"
+            disabled={isSaving || isRequestingLocation}
+            onPress={() => void handleSkip()}
           />
           {permissionState && (!permissionState.canAskAgain || !permissionState.foregroundGranted) ? (
             <ActionButton

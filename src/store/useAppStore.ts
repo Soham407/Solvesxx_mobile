@@ -242,6 +242,7 @@ interface AppState {
   refreshProfile: () => Promise<void>;
   completeBiometricPrompt: (enabled: boolean) => Promise<void>;
   completeGeoCalibration: (record: GeoCalibrationRecord) => Promise<void>;
+  skipGeoCalibration: (record: GeoCalibrationRecord) => Promise<void>;
   recordActivity: (force?: boolean) => Promise<void>;
   setBiometricLocked: (locked: boolean) => void;
   signOut: () => Promise<void>;
@@ -424,6 +425,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (currentSession) {
       await saveGeoCalibrationToProfile(currentSession.user.id, record);
     }
+
+    set((state) => ({
+      onboarding: {
+        ...state.onboarding,
+        geoCalibration: record,
+      },
+    }));
+  },
+
+  skipGeoCalibration: async (record) => {
+    await saveGeoCalibration(record);
 
     set((state) => ({
       onboarding: {

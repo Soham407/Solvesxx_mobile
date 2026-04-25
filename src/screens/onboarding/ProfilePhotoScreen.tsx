@@ -91,6 +91,10 @@ export function ProfilePhotoScreen() {
     }
   };
 
+  const handleSkip = () => {
+    navigation.replace('GeoFenceCalibration');
+  };
+
   return (
     <ScreenShell
       eyebrow="Guard setup"
@@ -111,6 +115,13 @@ export function ProfilePhotoScreen() {
             variant="ghost"
             disabled={isSaving}
             onPress={() => void handleCapture()}
+          />
+          <ActionButton
+            label="Skip for now"
+            testID="qa_onboarding_profile_skip"
+            variant="ghost"
+            disabled={isSaving}
+            onPress={handleSkip}
           />
         </View>
       }

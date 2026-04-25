@@ -338,6 +338,14 @@ export function GuardChecklistScreen(_props: GuardChecklistScreenProps) {
         ) : null}
       </InfoCard>
 
+      {!usePreviewFlow && !remoteChecklistQuery.isLoading && draftItems.length === 0 ? (
+        <InfoCard>
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            No checklist items have been configured for this location yet. Contact your supervisor to set up the daily checklist.
+          </Text>
+        </InfoCard>
+      ) : null}
+
       <Modal transparent animationType="fade" visible={infoVisible}>
         <Pressable style={styles.modalBackdrop} onPress={() => setInfoVisible(false)}>
           <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

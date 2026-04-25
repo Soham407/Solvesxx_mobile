@@ -47,6 +47,14 @@ function formatCountdown(value: string | null) {
   return `${minutes}:${String(seconds).padStart(2, '0')} remaining`;
 }
 
+function hasRpcResultError(result: unknown): result is { success?: boolean; error?: string } {
+  return Boolean(
+    result &&
+      typeof result === 'object' &&
+      ('success' in result || 'error' in result),
+  );
+}
+
 export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
@@ -88,7 +96,12 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
       return approveResidentVisitor(visitorId, profile.userId);
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (hasRpcResultError(result) && (result.success === false || result.error)) {
+        setMessage(result.error ?? 'Visitor approval failed.');
+        return;
+      }
+
       setMessage('Visitor approved successfully.');
       await refreshVisitors();
     },
@@ -106,7 +119,12 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
 
       return denyResidentVisitor(input.visitorId, profile.userId, input.reason);
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (hasRpcResultError(result) && (result.success === false || result.error)) {
+        setMessage(result.error ?? 'Visitor denial failed.');
+        return;
+      }
+
       setMessage('Visitor denied successfully.');
       setDenyModalOpen(false);
       setSelectedVisitor(null);
