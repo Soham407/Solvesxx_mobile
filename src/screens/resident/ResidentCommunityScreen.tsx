@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BorderRadius.lg,
     borderTopRightRadius: BorderRadius.lg,
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing['2xl'],
   },
   modalHeader: {
     flexDirection: 'row',

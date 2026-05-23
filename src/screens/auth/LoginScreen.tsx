@@ -171,6 +171,48 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   variant="secondary"
                   onPress={() => void enterDevPreview('employee')}
                 />
+                <ActionButton
+                  label="Preview HOD"
+                  testID="qa_login_preview_company_hod"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('company_hod')}
+                />
+                <ActionButton
+                  label="Preview Accounts"
+                  testID="qa_login_preview_account"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('account')}
+                />
+                <ActionButton
+                  label="Preview Storekeeper"
+                  testID="qa_login_preview_storekeeper"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('storekeeper')}
+                />
+                <ActionButton
+                  label="Preview Site Supervisor"
+                  testID="qa_login_preview_site_supervisor"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('site_supervisor')}
+                />
+                <ActionButton
+                  label="Preview MD"
+                  testID="qa_login_preview_company_md"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('company_md')}
+                />
+                <ActionButton
+                  label="Preview Admin"
+                  testID="qa_login_preview_admin"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('admin')}
+                />
+                <ActionButton
+                  label="Preview Super Admin"
+                  testID="qa_login_preview_super_admin"
+                  variant="secondary"
+                  onPress={() => void enterDevPreview('super_admin')}
+                />
               </View>
             ) : null}
           </View>

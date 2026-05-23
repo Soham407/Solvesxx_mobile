@@ -1,12 +1,19 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { AccountNavigator } from './AccountNavigator';
+import { AdminNavigator } from './AdminNavigator';
 import { BuyerNavigator } from './BuyerNavigator';
 import { GuardNavigator } from './GuardNavigator';
+import { HODNavigator } from './HODNavigator';
 import { HRMSNavigator } from './HRMSNavigator';
+import { MDNavigator } from './MDNavigator';
 import { OversightNavigator } from './OversightNavigator';
 import { ResidentNavigator } from './ResidentNavigator';
 import { ServiceNavigator } from './ServiceNavigator';
+import { SiteSupervisorNavigator } from './SiteSupervisorNavigator';
+import { StorekeeperNavigator } from './StorekeeperNavigator';
 import { SupplierNavigator } from './SupplierNavigator';
+import { SuperAdminNavigator } from './SuperAdminNavigator';
 import { RoleLandingScreen } from '../screens/app/RoleLandingScreen';
 import type { AppRole } from '../types/app';
 import type { RoleStackParamList } from './types';
@@ -49,6 +56,34 @@ export function RoleNavigator({ role }: RoleNavigatorProps) {
 
   if (role === 'supplier' || role === 'vendor') {
     return <SupplierNavigator />;
+  }
+
+  if (role === 'company_hod') {
+    return <HODNavigator />;
+  }
+
+  if (role === 'account') {
+    return <AccountNavigator />;
+  }
+
+  if (role === 'storekeeper') {
+    return <StorekeeperNavigator />;
+  }
+
+  if (role === 'site_supervisor') {
+    return <SiteSupervisorNavigator />;
+  }
+
+  if (role === 'company_md') {
+    return <MDNavigator />;
+  }
+
+  if (role === 'admin') {
+    return <AdminNavigator />;
+  }
+
+  if (role === 'super_admin') {
+    return <SuperAdminNavigator />;
   }
 
   return (

@@ -67,3 +67,42 @@ export type SupplierTabParamList = {
   SupplierOrders: undefined;
   SupplierBilling: undefined;
 };
+
+export type HODTabParamList = {
+  HODHome: undefined;
+  HODApprovals: undefined;
+  HODTeam: undefined;
+};
+
+export type AccountTabParamList = {
+  AccountHome: undefined;
+  AccountBills: undefined;
+  AccountPayments: undefined;
+};
+
+export type StorekeeperTabParamList = {
+  StorekeeperHome: undefined;
+  StorekeeperAlerts: undefined;
+  StorekeeperGRN: undefined;
+};
+
+export type SiteSupervisorTabParamList = {
+  SiteSupervisorHome: undefined;
+  SiteSupervisorGuards: undefined;
+  SiteSupervisorActions: undefined;
+};
+
+export type MDTabParamList = {
+  MDHome: undefined;
+  MDApprovals: undefined;
+};
+
+export type AdminTabParamList = {
+  AdminHome: undefined;
+  AdminActions: undefined;
+};
+
+export type SuperAdminTabParamList = {
+  SuperAdminHome: undefined;
+  SuperAdminCompanies: undefined;
+};
