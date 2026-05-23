@@ -40,13 +40,13 @@ const DEV_PREVIEW_PROFILES = [
   },
   {
     phone: '+912121212121',
-    role: 'delivery_boy',
+    role: 'delivery_agent',
     label: 'Delivery preview',
   },
   {
     phone: '+912323232323',
-    role: 'service_boy',
-    label: 'Service boy preview',
+    role: 'field_technician',
+    label: 'Service technician preview',
   },
   {
     phone: '+914444444444',

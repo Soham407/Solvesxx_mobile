@@ -7,6 +7,7 @@ import { getBiometricCapability, type BiometricCapability } from '../lib/biometr
 import { clearGuardState } from '../lib/guardStorage';
 import { clearHrmsPreviewState } from '../lib/hrms';
 import { clearOversightState } from '../lib/oversightStorage';
+import { isServiceRole } from '../lib/roleAliases';
 import { fetchCurrentAppProfile, saveGeoCalibrationToProfile } from '../lib/profile';
 import { clearServiceState } from '../lib/serviceStorage';
 import {
@@ -18,6 +19,8 @@ import {
   saveLastActivityAt,
 } from '../lib/storage';
 import { supabase } from '../lib/supabase';
+import { useResidentPresenceStore } from './useResidentPresenceStore';
+import { useNotificationStore } from './useNotificationStore';
 import type {
   AppRole,
   AppUserProfile,
@@ -96,6 +99,7 @@ function createDevPreviewIdentity(role: AppRole) {
         guardId: null,
         guardCode: null,
       };
+    case 'delivery_agent':
     case 'delivery_boy':
       return {
         userId: 'dev-preview-delivery',
@@ -105,6 +109,7 @@ function createDevPreviewIdentity(role: AppRole) {
         guardId: null,
         guardCode: null,
       };
+    case 'field_technician':
     case 'service_boy':
       return {
         userId: 'dev-preview-service-boy',
@@ -302,6 +307,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   enterDevPreview: async (role = 'security_guard') => {
+    await Promise.all([
+      useResidentPresenceStore.getState().reset(),
+      useNotificationStore.getState().reset(),
+    ]);
+
     if (role === 'security_guard') {
       await clearGuardState();
     }
@@ -322,12 +332,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await clearOversightState();
     }
 
-    if (
-      role === 'ac_technician' ||
-      role === 'pest_control_technician' ||
-      role === 'delivery_boy' ||
-      role === 'service_boy'
-    ) {
+    if (isServiceRole(role)) {
       await clearServiceState();
     }
 
@@ -475,6 +480,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await signOutRequest();
     } finally {
+      await Promise.all([
+        clearGuardState(),
+        clearBuyerState(),
+        clearSupplierState(),
+        clearServiceState(),
+        clearOversightState(),
+        clearHrmsPreviewState('dev-preview-employee'),
+        useResidentPresenceStore.getState().reset(),
+        useNotificationStore.getState().reset(),
+      ]);
       set(() => ({
         session: null,
         profile: null,

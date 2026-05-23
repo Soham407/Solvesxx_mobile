@@ -12,6 +12,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isDeliveryRole } from '../../lib/roleAliases';
 import {
   calculateDistanceMeters,
   getCurrentLocationFix,
@@ -44,6 +45,8 @@ function getRoleTitle(role: ServiceRole) {
       return 'AC Technician';
     case 'pest_control_technician':
       return 'Pest Control';
+    case 'delivery_agent':
+    case 'delivery_agent':
     case 'delivery_boy':
       return 'Delivery';
     default:
@@ -57,6 +60,8 @@ function getRoleDescription(role: ServiceRole) {
       return 'Receive service requests, capture before and after proof, and close work orders from the field.';
     case 'pest_control_technician':
       return 'Complete PPE gating, track chemical requests, and upload treatment proof without leaving the service lane.';
+    case 'delivery_agent':
+    case 'delivery_agent':
     case 'delivery_boy':
       return 'Run pickup-to-delivery status changes and attach destination proof from a single mobile workspace.';
     default:
@@ -172,10 +177,10 @@ export function ServiceHomeScreen({ navigation }: ServiceHomeScreenProps) {
 
     try {
       const location = await buildLocationSnapshot();
-      await refreshWorkspace();
+      const result = await refreshWorkspace();
       setMessage(
-        pendingApprovals
-          ? `Workspace refreshed. ${pendingApprovals} pending approval item${pendingApprovals === 1 ? '' : 's'} moved forward locally.`
+        result.approvedCount
+          ? `Workspace refreshed. ${result.approvedCount} pending approval item${result.approvedCount === 1 ? '' : 's'} moved forward locally.`
           : location.distanceFromAssignedSite == null
             ? 'Workspace refreshed and live location captured.'
             : `Workspace refreshed. You are ${location.distanceFromAssignedSite}m from the assigned site.`,
@@ -296,10 +301,10 @@ export function ServiceHomeScreen({ navigation }: ServiceHomeScreenProps) {
         <View style={styles.metricCell}>
           <MetricCard
             icon={<Package color={colors.warning} size={20} />}
-            label={role === 'delivery_boy' ? 'Dispatch notes' : 'Materials'}
-            value={String(role === 'delivery_boy' ? deliveryProofPendingCount : pendingApprovals)}
+            label={isDeliveryRole(role) ? 'Dispatch notes' : 'Materials'}
+            value={String(isDeliveryRole(role) ? deliveryProofPendingCount : pendingApprovals)}
             caption={
-              role === 'delivery_boy'
+              isDeliveryRole(role)
                 ? 'Live items waiting for delivery proof'
                 : 'Requests waiting on local approval'
             }
@@ -356,11 +361,9 @@ export function ServiceHomeScreen({ navigation }: ServiceHomeScreenProps) {
             onPress={() => navigation.navigate('ServiceTasks')}
           />
           <ActionButton
-            label={role === 'delivery_boy' ? 'Open proof lane' : 'Open materials'}
+            label={isDeliveryRole(role) ? 'Open proof lane' : 'Open materials'}
             variant="ghost"
-            onPress={() =>
-              navigation.navigate(role === 'delivery_boy' ? 'ServiceProof' : 'ServiceMaterials')
-            }
+            onPress={() => navigation.navigate(isDeliveryRole(role) ? 'ServiceProof' : 'ServiceMaterials')}
           />
           <ActionButton label="Sign out" variant="ghost" onPress={() => void signOut()} />
         </View>

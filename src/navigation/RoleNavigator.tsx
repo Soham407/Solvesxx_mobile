@@ -15,6 +15,7 @@ import { StorekeeperNavigator } from './StorekeeperNavigator';
 import { SupplierNavigator } from './SupplierNavigator';
 import { SuperAdminNavigator } from './SuperAdminNavigator';
 import { RoleLandingScreen } from '../screens/app/RoleLandingScreen';
+import { isServiceRole } from '../lib/roleAliases';
 import type { AppRole } from '../types/app';
 import type { RoleStackParamList } from './types';
 
@@ -45,12 +46,7 @@ export function RoleNavigator({ role }: RoleNavigatorProps) {
     return <BuyerNavigator />;
   }
 
-  if (
-    role === 'ac_technician' ||
-    role === 'pest_control_technician' ||
-    role === 'delivery_boy' ||
-    role === 'service_boy'
-  ) {
+  if (isServiceRole(role)) {
     return <ServiceNavigator />;
   }
 

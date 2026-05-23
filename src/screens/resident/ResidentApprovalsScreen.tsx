@@ -64,6 +64,7 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
   const approvePreviewVisitor = useGuardStore((state) => state.approveVisitor);
   const denyPreviewVisitor = useGuardStore((state) => state.denyVisitor);
   const setPreviewFrequentVisitor = useGuardStore((state) => state.setVisitorFrequent);
+  const refreshVisitorApprovals = useGuardStore((state) => state.refreshVisitorApprovals);
   const activeResidents = useResidentPresenceStore((state) => state.members);
   const hasLiveSync = useResidentPresenceStore((state) => state.hasLiveSync);
   const [message, setMessage] = useState<string | null>(null);
@@ -83,6 +84,20 @@ export function ResidentApprovalsScreen(_props: ResidentApprovalsScreenProps) {
       queryKey: ['resident', 'pending-visitors', profile?.userId],
     });
   };
+
+  useEffect(() => {
+    if (!previewMode) {
+      return;
+    }
+
+    void refreshVisitorApprovals();
+
+    const timer = setInterval(() => {
+      void refreshVisitorApprovals();
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [previewMode, refreshVisitorApprovals]);
 
   const approveMutation = useMutation({
     mutationFn: async (visitorId: string) => {

@@ -90,8 +90,12 @@ export function BuyerHomeScreen({ navigation }: BuyerHomeScreenProps) {
     setMessage(null);
 
     try {
-      await refreshDashboard();
-      setMessage('Buyer order timeline refreshed with the latest local workflow state.');
+      const result = await refreshDashboard();
+      setMessage(
+        result.advancedCount
+          ? `Buyer order timeline refreshed and ${result.advancedCount} request${result.advancedCount === 1 ? '' : 's'} moved forward.`
+          : 'Buyer order timeline refreshed with the latest local workflow state.',
+      );
     } finally {
       setIsRefreshing(false);
     }

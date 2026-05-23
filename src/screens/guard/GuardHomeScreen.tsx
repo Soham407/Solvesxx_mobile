@@ -73,6 +73,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const visitorLog = useGuardStore((state) => state.visitorLog);
   const sosEvents = useGuardStore((state) => state.sosEvents);
   const lastPatrolResetAt = useGuardStore((state) => state.lastPatrolResetAt);
+  const geofenceBreakUntilAt = useGuardStore((state) => state.geofenceBreakUntilAt);
   const lastKnownLocation = useGuardStore((state) => state.lastKnownLocation);
   const setOfflineMode = useGuardStore((state) => state.setOfflineMode);
   const rememberLocation = useGuardStore((state) => state.rememberLocation);
@@ -80,6 +81,8 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const clockOut = useGuardStore((state) => state.clockOut);
   const triggerSos = useGuardStore((state) => state.triggerSos);
   const resetPatrolClock = useGuardStore((state) => state.resetPatrolClock);
+  const requestGeofenceBreak = useGuardStore((state) => state.requestGeofenceBreak);
+  const clearGeofenceBreak = useGuardStore((state) => state.clearGeofenceBreak);
   const flushOfflineQueue = useGuardStore((state) => state.flushOfflineQueue);
   const signOut = useAppStore((state) => state.signOut);
   const previewMode = isPreviewProfile(profile);
@@ -449,6 +452,26 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     : lastKnownLocation?.capturedAt
       ? 'Needs location check'
       : 'Location not captured yet';
+  const geofenceBreakSummary = geofenceBreakUntilAt
+    ? `Monitoring paused until ${formatTimestamp(geofenceBreakUntilAt)}`
+    : null;
+
+  const handleBreakAction = async () => {
+    setMessage(null);
+
+    if (geofenceBreakUntilAt) {
+      await clearGeofenceBreak();
+      setMessage('Geofence break cleared. Monitoring resumed.');
+      return;
+    }
+
+    const result = await requestGeofenceBreak(15);
+    setMessage(
+      result.breakUntilAt
+        ? `Geofence monitoring paused until ${formatTimestamp(result.breakUntilAt)}.`
+        : 'Geofence break is only available while on duty.',
+    );
+  };
 
   return (
     <ScreenShell
@@ -517,6 +540,12 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
             onPress={() => navigation.navigate('GuardChecklist')}
           />
           <ActionButton
+            label={geofenceBreakUntilAt ? 'End geofence break' : 'Pause geofence 15m'}
+            variant="ghost"
+            testID="qa_guard_geofence_break"
+            onPress={() => void handleBreakAction()}
+          />
+          <ActionButton
             label="Emergency contacts"
             variant="ghost"
             testID="qa_guard_open_contacts"
@@ -581,6 +610,11 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
               label={lastKnownLocation?.withinGeoFence ? 'Within geo-fence' : 'Needs check'}
               tone={geoStatusTone}
             />
+            {geofenceBreakSummary ? (
+              <Text style={[styles.sectionCaption, { color: colors.warning }]}>
+                {geofenceBreakSummary}
+              </Text>
+            ) : null}
             <Text style={[styles.syncLine, { color: colors.foreground }]}>
               {lastKnownLocation?.distanceFromAssignedSite == null
                 ? 'No live distance captured yet.'

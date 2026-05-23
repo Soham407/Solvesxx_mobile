@@ -130,16 +130,16 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   onPress={() => void enterDevPreview('pest_control_technician')}
                 />
                 <ActionButton
-                  label="Preview delivery"
-                  testID="qa_login_preview_delivery_boy"
+                  label="Preview delivery agent"
+                  testID="qa_login_preview_delivery_agent"
                   variant="secondary"
-                  onPress={() => void enterDevPreview('delivery_boy')}
+                  onPress={() => void enterDevPreview('delivery_agent')}
                 />
                 <ActionButton
-                  label="Preview service boy"
-                  testID="qa_login_preview_service_boy"
+                  label="Preview service technician"
+                  testID="qa_login_preview_field_technician"
                   variant="secondary"
-                  onPress={() => void enterDevPreview('service_boy')}
+                  onPress={() => void enterDevPreview('field_technician')}
                 />
                 <ActionButton
                   label="Preview supplier"

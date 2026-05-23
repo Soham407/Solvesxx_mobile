@@ -6,6 +6,7 @@ import {
   stopPeriodicGpsTracking,
   startGeofenceExitMonitoring,
   stopGeofenceExitMonitoring,
+  setGeofenceBreakUntilAt,
 } from '../lib/gpsService';
 import type { AppUserProfile } from '../types/app';
 import type {
@@ -228,6 +229,7 @@ function createDefaultGuardState(profile: AppUserProfile | null): GuardPersisted
     isOfflineMode: false,
     dutyStatus: 'off_duty',
     lastPatrolResetAt: null,
+    geofenceBreakUntilAt: null,
     lastSyncAt: null,
     lastKnownLocation: null,
     attendanceLog: [],
@@ -256,6 +258,12 @@ function normalizeHydratedState(
     ...snapshot,
     ownerUserId: profile?.userId ?? snapshot.ownerUserId,
     checklistItems: snapshot.checklistItems.length ? snapshot.checklistItems : fallback.checklistItems,
+    visitorLog: sweepExpiredVisitorApprovals(
+      snapshot.visitorLog.map((visitor) => ({
+        ...visitor,
+        rejectionReason: visitor.rejectionReason ?? null,
+      })),
+    ),
     frequentVisitors: snapshot.frequentVisitors.length
       ? snapshot.frequentVisitors
       : fallback.frequentVisitors,
@@ -278,12 +286,35 @@ function sanitizePersistedPhotoUri(value: string | null | undefined) {
   return isDataUri(value) ? null : (value ?? null);
 }
 
+function sweepExpiredVisitorApprovals(visitors: GuardVisitorEntry[]): GuardVisitorEntry[] {
+  const now = Date.now();
+
+  return visitors.map((visitor) => {
+    if (
+      visitor.approvalStatus !== 'pending' ||
+      !visitor.approvalDeadlineAt ||
+      new Date(visitor.approvalDeadlineAt).getTime() > now
+    ) {
+      return visitor;
+    }
+
+    return {
+      ...visitor,
+      approvalStatus: 'timed_out' as GuardVisitorEntry['approvalStatus'],
+      decisionAt: visitor.decisionAt ?? new Date().toISOString(),
+      rejectionReason: visitor.rejectionReason ?? 'Approval window expired.',
+    };
+  });
+}
+
 interface GuardStore extends GuardPersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
   setOfflineMode: (value: boolean) => Promise<void>;
   rememberLocation: (location: GuardLocationSnapshot | null) => Promise<void>;
   resetPatrolClock: () => Promise<void>;
+  requestGeofenceBreak: (durationMinutes: number) => Promise<{ breakUntilAt: string | null }>;
+  clearGeofenceBreak: () => Promise<void>;
   clockIn: (options: {
     location: GuardLocationSnapshot | null;
     photoUri: string | null;
@@ -301,6 +332,7 @@ interface GuardStore extends GuardPersistedState {
   toggleChecklistItem: (id: string) => Promise<void>;
   attachChecklistEvidence: (id: string, uri: string) => Promise<void>;
   submitChecklist: () => Promise<{ queued: boolean; submitted: boolean }>;
+  refreshVisitorApprovals: () => Promise<void>;
   addVisitor: (input: {
     name: string;
     phone: string;
@@ -328,6 +360,7 @@ function buildPersistedState(state: GuardStore): GuardPersistedState {
     isOfflineMode: state.isOfflineMode,
     dutyStatus: state.dutyStatus,
     lastPatrolResetAt: state.lastPatrolResetAt,
+    geofenceBreakUntilAt: state.geofenceBreakUntilAt,
     lastSyncAt: state.lastSyncAt,
     lastKnownLocation: state.lastKnownLocation,
     attendanceLog: state.attendanceLog.map((entry) => ({
@@ -415,6 +448,7 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
     const storedState = await loadGuardState();
     const hydratedState = normalizeHydratedState(storedState, profile);
 
+    setGeofenceBreakUntilAt(hydratedState.geofenceBreakUntilAt);
     set({
       ...hydratedState,
       hasHydrated: true,
@@ -443,6 +477,38 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
     set({
       lastPatrolResetAt: new Date().toISOString(),
     });
+
+    await persistGuardStore(get);
+  },
+
+  requestGeofenceBreak: async (durationMinutes) => {
+    const state = get();
+
+    if (state.dutyStatus === 'off_duty') {
+      return {
+        breakUntilAt: state.geofenceBreakUntilAt,
+      };
+    }
+
+    const breakUntilAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+
+    set({
+      geofenceBreakUntilAt: breakUntilAt,
+    });
+    setGeofenceBreakUntilAt(breakUntilAt);
+
+    await persistGuardStore(get);
+
+    return {
+      breakUntilAt,
+    };
+  },
+
+  clearGeofenceBreak: async () => {
+    set({
+      geofenceBreakUntilAt: null,
+    });
+    setGeofenceBreakUntilAt(null);
 
     await persistGuardStore(get);
   },
@@ -625,7 +691,18 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
     };
   },
 
+  refreshVisitorApprovals: async () => {
+    set((state) => ({
+      visitorLog: sweepExpiredVisitorApprovals(state.visitorLog),
+    }));
+
+    await persistGuardStore(get);
+  },
+
   addVisitor: async (input) => {
+    const recordedAt = new Date().toISOString();
+    const approvalDeadlineAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
     set((state) => {
       const queueState = withQueue(state, {
         label: `Visitor entry pending sync: ${input.name}`,
@@ -644,12 +721,13 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
         vehicleNumber: input.vehicleNumber,
         photoUri: input.photoUri,
         photoUrl: null,
-        recordedAt: new Date().toISOString(),
+        recordedAt,
         status: 'inside',
         frequentVisitor: input.frequentVisitor,
         approvalStatus: 'pending',
-        approvalDeadlineAt: null,
+        approvalDeadlineAt,
         decisionAt: null,
+        rejectionReason: null,
       };
 
       return {
@@ -716,6 +794,7 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
               ...entry,
               approvalStatus: 'approved',
               decisionAt: new Date().toISOString(),
+              rejectionReason: null,
             }
           : entry,
       ),
@@ -743,6 +822,7 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
               ...entry,
               approvalStatus: 'denied',
               decisionAt: new Date().toISOString(),
+              rejectionReason: _reason?.trim() || 'Visitor denied by resident approval.',
             }
           : entry,
       ),

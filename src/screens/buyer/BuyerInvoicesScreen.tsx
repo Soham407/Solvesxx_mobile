@@ -65,8 +65,10 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
   const invoices = useBuyerStore((state) => state.invoices);
   const acknowledgeInvoice = useBuyerStore((state) => state.acknowledgeInvoice);
   const disputeInvoice = useBuyerStore((state) => state.disputeInvoice);
+  const recordInvoicePayment = useBuyerStore((state) => state.recordInvoicePayment);
   const [message, setMessage] = useState<string | null>(null);
   const [disputeDrafts, setDisputeDrafts] = useState<Record<string, string>>({});
+  const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({});
 
   const totalAmount = useMemo(
     () => invoices.reduce((sum, invoice) => sum + invoice.totalAmountPaise, 0),
@@ -165,7 +167,23 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
                 }
                 placeholder="Mismatch in rate, quantity, or service period"
                 value={disputeDrafts[invoice.id] ?? ''}
-              />
+                />
+              {invoice.dueAmountPaise > 0 ? (
+                <FormField
+                  helperText="Record a partial or full payment against the remaining due."
+                  inputTestID={`qa_buyer_invoice_payment_amount_${invoice.id}`}
+                  label="Payment amount"
+                  keyboardType="number-pad"
+                  onChangeText={(value) =>
+                    setPaymentDrafts((state) => ({
+                      ...state,
+                      [invoice.id]: value,
+                    }))
+                  }
+                  placeholder={(invoice.dueAmountPaise / 100).toFixed(0)}
+                  value={paymentDrafts[invoice.id] ?? ''}
+                />
+              ) : null}
               <View style={styles.actionGroup}>
                 <ActionButton
                   label="Acknowledge"
@@ -173,8 +191,13 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
                   variant="secondary"
                   disabled={invoice.status !== 'sent'}
                   onPress={() => {
-                    void acknowledgeInvoice(invoice.id);
-                    setMessage(`Invoice ${invoice.invoiceNumber} acknowledged from mobile.`);
+                    void acknowledgeInvoice(invoice.id).then((result) => {
+                      setMessage(
+                        result.updated
+                          ? `Invoice ${invoice.invoiceNumber} acknowledged from mobile.`
+                          : `Invoice ${invoice.invoiceNumber} could not be acknowledged from its current state.`,
+                      );
+                    });
                   }}
                 />
                 <ActionButton
@@ -183,10 +206,48 @@ export function BuyerInvoicesScreen(_props: BuyerInvoicesScreenProps) {
                   variant="ghost"
                   disabled={invoice.status === 'disputed'}
                   onPress={() => {
-                    void disputeInvoice(invoice.id, disputeDrafts[invoice.id] ?? '');
-                    setMessage(`Invoice ${invoice.invoiceNumber} moved into dispute review.`);
+                    void disputeInvoice(invoice.id, disputeDrafts[invoice.id] ?? '').then((result) => {
+                      setMessage(
+                        result.updated
+                          ? `Invoice ${invoice.invoiceNumber} moved into dispute review.`
+                          : `Invoice ${invoice.invoiceNumber} could not be moved into dispute review.`,
+                      );
+                    });
                   }}
                 />
+                {invoice.dueAmountPaise > 0 ? (
+                  <ActionButton
+                    label="Record payment"
+                    testID={`qa_buyer_invoice_payment_${invoice.id}`}
+                    variant="ghost"
+                  onPress={() => {
+                      const rawAmount = paymentDrafts[invoice.id]?.trim()
+                        ? Number(paymentDrafts[invoice.id])
+                        : invoice.dueAmountPaise / 100;
+
+                      if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
+                        setMessage('Enter a positive payment amount before recording payment.');
+                        return;
+                      }
+
+                      void recordInvoicePayment({
+                        id: invoice.id,
+                        amountPaise: Math.round(rawAmount * 100),
+                      }).then((result) => {
+                        if (!result.updated) {
+                          setMessage(`Payment for ${invoice.invoiceNumber} could not be recorded.`);
+                          return;
+                        }
+
+                        setPaymentDrafts((state) => ({
+                          ...state,
+                          [invoice.id]: '',
+                        }));
+                        setMessage(`Payment recorded for ${invoice.invoiceNumber}.`);
+                      });
+                    }}
+                  />
+                ) : null}
               </View>
             </View>
           ))

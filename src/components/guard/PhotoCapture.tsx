@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { Image, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera as CameraIcon, Upload as UploadIcon, X as XIcon } from 'lucide-react-native';
+import { Camera as CameraIcon, X as XIcon } from 'lucide-react-native';
 import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 
@@ -57,7 +57,7 @@ export function PhotoCapture({
       <View style={[styles.container, { borderColor: colors.info }]}>
         <View style={styles.previewWrapper}>
           <View style={[styles.previewPlaceholder, { backgroundColor: colors.secondary }]}>
-            <UploadIcon color={colors.info} size={24} />
+            <Image source={{ uri: capturedPhotoUri }} style={styles.previewImage} />
           </View>
           <View style={styles.previewContent}>
             <Text style={[styles.previewLabel, { color: colors.foreground }]}>Photo captured</Text>
@@ -130,8 +130,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
   previewContent: {
     flex: 1,

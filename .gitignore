@@ -41,3 +41,7 @@ out.log
 /ios
 /android
 .env
+
+# Sandcastle orchestrator runtime artifacts
+.sandcastle/logs/
+.sandcastle/worktrees/

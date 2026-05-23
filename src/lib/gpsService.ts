@@ -8,6 +8,7 @@ interface GpsServiceState {
   geofenceMonitorInterval: NodeJS.Timeout | null;
   lastExitWarningTime: number | null;
   isOutsideGeofence: boolean;
+  geofenceBreakUntilAt: number | null;
 }
 
 const state: GpsServiceState = {
@@ -15,7 +16,19 @@ const state: GpsServiceState = {
   geofenceMonitorInterval: null,
   lastExitWarningTime: null,
   isOutsideGeofence: false,
+  geofenceBreakUntilAt: null,
 };
+
+export function setGeofenceBreakUntilAt(value: string | number | null) {
+  const nextUntilAt =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? new Date(value).getTime()
+        : null;
+
+  state.geofenceBreakUntilAt = nextUntilAt && Number.isFinite(nextUntilAt) ? nextUntilAt : null;
+}
 
 /**
  * Start periodic GPS tracking (every 5 minutes during guard shift)
@@ -88,16 +101,20 @@ export function startGeofenceExitMonitoring(
   const GRACE_PERIOD_MS = 30000; // 30 seconds
   const AUTO_PUNCHOUT_MS = 120000; // 2 minutes
 
-  // TODO (future): Add "Request Break" feature — guard taps to temporarily pause geofence
-  // monitoring for a supervisor-approved duration (e.g. shop run, prayers, errand).
-  // Flow: guard submits reason + estimated duration → supervisor notified → monitoring
-  // pauses for that window → auto-resumes after. Without this, any absence > 2 min
-  // triggers an unintended auto punch-out.
-
   let exitDetectedAt: number | null = null;
 
   state.geofenceMonitorInterval = setInterval(async () => {
     try {
+      if (state.geofenceBreakUntilAt && Date.now() < state.geofenceBreakUntilAt) {
+        state.isOutsideGeofence = false;
+        state.lastExitWarningTime = null;
+        return;
+      }
+
+      if (state.geofenceBreakUntilAt && Date.now() >= state.geofenceBreakUntilAt) {
+        state.geofenceBreakUntilAt = null;
+      }
+
       const fix = await getCurrentLocationFix();
 
       if (!assignedLocation.latitude || !assignedLocation.longitude) {
@@ -239,5 +256,6 @@ export function getGpsServiceState() {
     pollingActive: state.pollingInterval !== null,
     monitoringActive: state.geofenceMonitorInterval !== null,
     isOutsideGeofence: state.isOutsideGeofence,
+    geofenceBreakUntilAt: state.geofenceBreakUntilAt,
   };
 }

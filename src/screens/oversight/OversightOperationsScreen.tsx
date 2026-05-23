@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { ClipboardCheck, MapPinned, ScanSearch, Users } from 'lucide-react-native';
 
@@ -12,7 +13,14 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import {
+  fetchOversightAttendanceLog,
+  fetchOversightLiveGuards,
+  fetchOversightVisitorStats,
+  isPreviewProfile,
+} from '../../lib/mobileBackend';
 import type { OversightTabParamList } from '../../navigation/types';
+import { useAppStore } from '../../store/useAppStore';
 import { useOversightStore } from '../../store/useOversightStore';
 import type { OversightAttendanceRecord, OversightGuardRecord } from '../../types/oversight';
 
@@ -76,13 +84,50 @@ function getGeoTone(status: OversightAttendanceRecord['geoStatus']) {
 
 export function OversightOperationsScreen(_props: OversightOperationsScreenProps) {
   const { colors } = useAppTheme();
+  const profile = useAppStore((state) => state.profile);
+  const previewMode = isPreviewProfile(profile);
   const role = useOversightStore((state) => state.role);
-  const guards = useOversightStore((state) => state.guards);
-  const visitorStats = useOversightStore((state) => state.visitorStats);
-  const attendanceLog = useOversightStore((state) => state.attendanceLog);
+  const previewGuards = useOversightStore((state) => state.guards);
+  const previewVisitorStats = useOversightStore((state) => state.visitorStats);
+  const previewAttendanceLog = useOversightStore((state) => state.attendanceLog);
   const refreshFeed = useOversightStore((state) => state.refreshFeed);
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const guardsQuery = useQuery({
+    queryKey: ['oversight', 'live-guards', profile?.userId],
+    queryFn: fetchOversightLiveGuards,
+    enabled: Boolean(profile?.userId) && !previewMode,
+    refetchInterval: 60000,
+  });
+
+  const visitorStatsQuery = useQuery({
+    queryKey: ['oversight', 'visitor-stats', profile?.userId],
+    queryFn: fetchOversightVisitorStats,
+    enabled: Boolean(profile?.userId) && !previewMode,
+    refetchInterval: 60000,
+  });
+
+  const attendanceLogQuery = useQuery({
+    queryKey: ['oversight', 'attendance-log', profile?.userId],
+    queryFn: fetchOversightAttendanceLog,
+    enabled: Boolean(profile?.userId) && !previewMode,
+    refetchInterval: 60000,
+  });
+
+  const guards = previewMode ? previewGuards : guardsQuery.data ?? [];
+  const visitorStats = previewMode ? previewVisitorStats : visitorStatsQuery.data ?? [];
+  const attendanceLog = previewMode ? previewAttendanceLog : attendanceLogQuery.data ?? [];
+  const isLoading =
+    !previewMode &&
+    (guardsQuery.isLoading || visitorStatsQuery.isLoading || attendanceLogQuery.isLoading);
+  const errorMessage = !previewMode
+    ? guardsQuery.error?.message ??
+      visitorStatsQuery.error?.message ??
+      attendanceLogQuery.error?.message ??
+      null
+    : null;
 
   const checklistRate = useMemo(() => {
     const total = guards.reduce((sum, guard) => sum + guard.checklistTotal, 0);
@@ -116,8 +161,21 @@ export function OversightOperationsScreen(_props: OversightOperationsScreenProps
     setMessage(null);
 
     try {
-      await refreshFeed();
-      setMessage('Operations board refreshed with the latest patrol and gate movement.');
+      if (previewMode) {
+        await refreshFeed();
+      } else {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['oversight', 'live-guards', profile?.userId] }),
+          queryClient.invalidateQueries({ queryKey: ['oversight', 'visitor-stats', profile?.userId] }),
+          queryClient.invalidateQueries({ queryKey: ['oversight', 'attendance-log', profile?.userId] }),
+        ]);
+      }
+
+      setMessage(
+        previewMode
+          ? 'Operations board refreshed with the latest patrol and gate movement.'
+          : 'Operations board refreshed from live backend data.',
+      );
     } finally {
       setIsRefreshing(false);
     }
@@ -145,6 +203,11 @@ export function OversightOperationsScreen(_props: OversightOperationsScreenProps
         {message ? (
           <Text style={[styles.caption, { color: colors.primary }]} testID="qa_oversight_operations_message">
             {message}
+          </Text>
+        ) : null}
+        {errorMessage ? (
+          <Text style={[styles.caption, { color: colors.destructive }]}>
+            {errorMessage}
           </Text>
         ) : null}
         <View style={styles.actionRow}>
@@ -197,6 +260,11 @@ export function OversightOperationsScreen(_props: OversightOperationsScreenProps
 
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Checklist board</Text>
+        {isLoading ? (
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            Loading operations data...
+          </Text>
+        ) : null}
         {guards.length ? guards.map((guard, index) => {
           const progress = guard.checklistTotal
             ? Math.round((guard.checklistCompleted / guard.checklistTotal) * 100)

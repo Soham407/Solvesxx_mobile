@@ -75,8 +75,12 @@ export function SupplierHomeScreen({ navigation }: SupplierHomeScreenProps) {
     setMessage(null);
 
     try {
-      await refreshPortal();
-      setMessage('Supplier fulfillment board refreshed with the latest local PO state.');
+      const result = await refreshPortal();
+      setMessage(
+        result.receivedCount
+          ? `Supplier fulfillment board refreshed and ${result.receivedCount} dispatched PO${result.receivedCount === 1 ? '' : 's'} moved to received.`
+          : 'Supplier fulfillment board refreshed with the latest local PO state.',
+      );
     } finally {
       setIsRefreshing(false);
     }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -91,6 +91,7 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
 
   const previewMode = isPreviewProfile(profile);
   const usePreviewFlow = previewMode || isOfflineMode;
+  const refreshVisitorApprovals = useGuardStore((state) => state.refreshVisitorApprovals);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
@@ -128,6 +129,20 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
       });
     },
   });
+
+  useEffect(() => {
+    if (!usePreviewFlow) {
+      return;
+    }
+
+    void refreshVisitorApprovals();
+
+    const timer = setInterval(() => {
+      void refreshVisitorApprovals();
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [refreshVisitorApprovals, usePreviewFlow]);
 
   const insideVisitors = useMemo(
     () =>
@@ -524,6 +539,11 @@ export function GuardVisitorsScreen(_props: GuardVisitorsScreenProps) {
                       </Text>
                     ) : null}
                   </View>
+                  {visitor.rejectionReason ? (
+                    <Text style={[styles.metaText, { color: colors.destructive }]}>
+                      Rejection reason: {visitor.rejectionReason}
+                    </Text>
+                  ) : null}
                   <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
                     Logged {formatVisitorTimestamp(visitor.recordedAt)}
                   </Text>

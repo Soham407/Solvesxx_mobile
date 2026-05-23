@@ -1,10 +1,19 @@
 import { create } from 'zustand';
 
 import { loadServiceState, saveServiceState } from '../lib/serviceStorage';
+import {
+  isDeliveryRole,
+  isFieldTechnicianRole,
+  isServiceRole as isCanonicalServiceRole,
+  normalizeAppRole,
+} from '../lib/roleAliases';
+import { useAppStore } from './useAppStore';
+import { useNotificationStore } from './useNotificationStore';
 import type { AppUserProfile } from '../types/app';
 import type {
   ServiceAttendanceEntry,
   ServiceMaterialRequest,
+  ServiceStockLedger,
   ServicePersistedState,
   ServicePPEItem,
   ServiceProofStage,
@@ -20,14 +29,18 @@ function isServiceRole(role: AppUserProfile['role']): role is ServiceRole {
   return (
     role === 'ac_technician' ||
     role === 'pest_control_technician' ||
-    role === 'delivery_boy' ||
-    role === 'service_boy'
+    isCanonicalServiceRole(role)
   );
 }
 
 function getServiceRole(profile: AppUserProfile | null): ServiceRole {
-  const role = profile?.role ?? null;
-  return isServiceRole(role) ? role : 'service_boy';
+  const role = normalizeAppRole(profile?.role ?? null);
+
+  if (role === 'unknown' || role === null) {
+    return 'field_technician';
+  }
+
+  return isServiceRole(role) ? role : 'field_technician';
 }
 
 function createPPEChecklist(role: ServiceRole): ServicePPEItem[] {
@@ -153,7 +166,7 @@ function createDefaultTasks(profile: AppUserProfile | null, role: ServiceRole): 
     ];
   }
 
-  if (role === 'delivery_boy') {
+  if (isDeliveryRole(role as AppUserProfile['role'])) {
     return [
       {
         id: 'service-task-delivery-1',
@@ -295,7 +308,7 @@ function createDefaultMaterialRequests(role: ServiceRole): ServiceMaterialReques
     ];
   }
 
-  if (role === 'service_boy') {
+  if (isFieldTechnicianRole(role as AppUserProfile['role'])) {
     return [
       {
         id: 'material-service-1',
@@ -315,6 +328,22 @@ function createDefaultMaterialRequests(role: ServiceRole): ServiceMaterialReques
   return [];
 }
 
+function createDefaultStockLedger(role: ServiceRole): ServiceStockLedger {
+  if (role === 'ac_technician') {
+    return { part: 12, chemical: 0, supply: 4 };
+  }
+
+  if (role === 'pest_control_technician') {
+    return { part: 0, chemical: 18, supply: 2 };
+  }
+
+  if (isDeliveryRole(role as AppUserProfile['role'])) {
+    return { part: 0, chemical: 0, supply: 6 };
+  }
+
+  return { part: 2, chemical: 0, supply: 16 };
+}
+
 function createDefaultState(profile: AppUserProfile | null): ServicePersistedState {
   const role = getServiceRole(profile);
 
@@ -327,6 +356,7 @@ function createDefaultState(profile: AppUserProfile | null): ServicePersistedSta
     attendanceLog: [],
     tasks: createDefaultTasks(profile, role),
     materialRequests: createDefaultMaterialRequests(role),
+    stockLedger: createDefaultStockLedger(role),
     ppeChecklist: createPPEChecklist(role),
   };
 }
@@ -354,6 +384,7 @@ function normalizeHydratedState(
     materialRequests: snapshot.materialRequests.length
       ? snapshot.materialRequests
       : fallback.materialRequests,
+    stockLedger: snapshot.stockLedger ?? fallback.stockLedger,
     ppeChecklist: snapshot.ppeChecklist.length ? snapshot.ppeChecklist : fallback.ppeChecklist,
   };
 }
@@ -371,7 +402,7 @@ function sortTasksByAssignedAt(tasks: ServiceTaskRecord[]) {
 interface ServiceStore extends ServicePersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
-  refreshWorkspace: () => Promise<void>;
+  refreshWorkspace: () => Promise<{ approvedCount: number }>;
   rememberLocation: (location: ServicePersistedState['lastKnownLocation']) => Promise<void>;
   checkInWithSelfie: (options: {
     location: ServicePersistedState['lastKnownLocation'];
@@ -389,7 +420,7 @@ interface ServiceStore extends ServicePersistedState {
     unit: string;
     note: string;
   }) => Promise<{ submitted: boolean }>;
-  markMaterialIssued: (id: string) => Promise<void>;
+  markMaterialIssued: (id: string) => Promise<{ updated: boolean; reason?: string }>;
   attachTaskProof: (taskId: string, stage: ServiceProofStage, uri: string) => Promise<void>;
   startTask: (taskId: string) => Promise<{ started: boolean; reason?: string }>;
   advanceDeliveryTask: (taskId: string) => Promise<{ advanced: boolean; reason?: string }>;
@@ -403,10 +434,11 @@ function buildPersistedState(state: ServiceStore): ServicePersistedState {
     dutyStatus: state.dutyStatus,
     lastKnownLocation: state.lastKnownLocation,
     lastSyncAt: state.lastSyncAt,
-    attendanceLog: state.attendanceLog,
-    tasks: state.tasks,
-    materialRequests: state.materialRequests,
-    ppeChecklist: state.ppeChecklist,
+  attendanceLog: state.attendanceLog,
+  tasks: state.tasks,
+  materialRequests: state.materialRequests,
+  stockLedger: state.stockLedger,
+  ppeChecklist: state.ppeChecklist,
   };
 }
 
@@ -431,14 +463,15 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
   },
 
   refreshWorkspace: async () => {
-    const nextPendingRequestId = get().materialRequests.find(
-      (request) => request.status === 'pending_approval',
-    )?.id;
+    const pendingRequestIds = get()
+      .materialRequests.filter((request) => request.status === 'pending_approval')
+      .map((request) => request.id);
+    const approvedCount = pendingRequestIds.length;
 
     set((state) => ({
       lastSyncAt: new Date().toISOString(),
       materialRequests: state.materialRequests.map((request) =>
-        request.id === nextPendingRequestId
+        pendingRequestIds.includes(request.id)
           ? {
               ...request,
               status: 'approved',
@@ -448,7 +481,9 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
       ),
       tasks: state.tasks.map((task) =>
         task.status === 'awaiting_material' &&
-        state.materialRequests.some((request) => request.id === nextPendingRequestId && request.taskId === task.id)
+        state.materialRequests.some(
+          (request) => pendingRequestIds.includes(request.id) && request.taskId === task.id,
+        )
           ? {
               ...task,
               status: 'in_progress',
@@ -458,6 +493,9 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
     }));
 
     await persistServiceStore(get);
+    return {
+      approvedCount,
+    };
   },
 
   rememberLocation: async (location) => {
@@ -578,7 +616,17 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
     const request = get().materialRequests.find((entry) => entry.id === id);
 
     if (!request || request.status !== 'approved') {
-      return;
+      return {
+        updated: false,
+        reason: 'This request is not approved yet.',
+      };
+    }
+
+    if (get().stockLedger[request.requestType] < request.quantity) {
+      return {
+        updated: false,
+        reason: 'Not enough stock remains for this request type.',
+      };
     }
 
     set((state) => ({
@@ -591,6 +639,10 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
             }
           : entry,
       ),
+      stockLedger: {
+        ...state.stockLedger,
+        [request.requestType]: state.stockLedger[request.requestType] - request.quantity,
+      },
       tasks: state.tasks.map((task) =>
         request && task.id === request.taskId && task.status === 'awaiting_material'
           ? {
@@ -602,6 +654,17 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
     }));
 
     await persistServiceStore(get);
+
+    const profile = useAppStore.getState().profile;
+    const remainingStock = get().stockLedger[request.requestType];
+
+    if (remainingStock <= 2) {
+      await useNotificationStore.getState().queuePreviewRoute('low_stock_alert', profile);
+    }
+
+    return {
+      updated: true,
+    };
   },
 
   attachTaskProof: async (taskId, stage, uri) => {
@@ -668,6 +731,7 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
     }
 
     const startedAt = new Date().toISOString();
+    const profile = useAppStore.getState().profile;
 
     set((state) => ({
       lastSyncAt: startedAt,
@@ -687,6 +751,11 @@ export const useServiceStore = create<ServiceStore>((set, get) => ({
     }));
 
     await persistServiceStore(get);
+
+    if (task.requiresResidentNotification && !task.residentNotificationSentAt) {
+      await useNotificationStore.getState().queuePreviewRoute('pest_control_alert', profile);
+    }
+
     return {
       started: true,
     };

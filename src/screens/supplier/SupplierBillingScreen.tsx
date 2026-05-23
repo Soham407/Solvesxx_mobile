@@ -60,6 +60,7 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
   const bills = useSupplierStore((state) => state.bills);
   const pos = useSupplierStore((state) => state.pos);
   const submitBill = useSupplierStore((state) => state.submitBill);
+  const recordBillPayment = useSupplierStore((state) => state.recordBillPayment);
   const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
   const [billNumber, setBillNumber] = useState('');
   const [amount, setAmount] = useState('');
@@ -110,12 +111,17 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
     setMessage(null);
 
     try {
-      await submitBill({
+      const result = await submitBill({
         poId: selectedPoId,
         billNumber,
         totalAmountPaise: parsedAmount,
         note,
       });
+
+      if (!result.submitted) {
+        setMessage('Select a purchase order that is ready for billing.');
+        return;
+      }
 
       setBillNumber('');
       setAmount('');
@@ -248,6 +254,22 @@ export function SupplierBillingScreen(_props: SupplierBillingScreenProps) {
               </Text>
               {bill.note ? (
                 <Text style={[styles.caption, { color: colors.foreground }]}>{bill.note}</Text>
+              ) : null}
+              {bill.paymentStatus !== 'paid' ? (
+                <ActionButton
+                  label="Mark payment received"
+                  variant="ghost"
+                  testID={`qa_supplier_bill_mark_paid_${index}`}
+                  onPress={() => {
+                    void recordBillPayment(bill.id).then((result) => {
+                      setMessage(
+                        result.updated
+                          ? `${bill.billNumber} marked as paid in the mobile supplier desk.`
+                          : `${bill.billNumber} could not be marked as paid from its current state.`,
+                      );
+                    });
+                  }}
+                />
               ) : null}
             </View>
           ))

@@ -32,6 +32,10 @@ const ROLE_COPY: Record<AppRole, { title: string; subtitle: string }> = {
     title: 'Accounts workspace',
     subtitle: 'Finance-focused mobile flows will layer onto this shell.',
   },
+  delivery_agent: {
+    title: 'Delivery workflow workspace',
+    subtitle: 'Pickup, transit, and proof-of-delivery flows are next.',
+  },
   delivery_boy: {
     title: 'Delivery workflow workspace',
     subtitle: 'Pickup, transit, and proof-of-delivery flows are next.',
@@ -59,6 +63,10 @@ const ROLE_COPY: Record<AppRole, { title: string; subtitle: string }> = {
   society_manager: {
     title: 'Society manager workspace',
     subtitle: 'Operational approvals and monitoring are routed correctly.',
+  },
+  field_technician: {
+    title: 'Service technician workspace',
+    subtitle: 'Assigned-task workflows will sit on this entry point.',
   },
   service_boy: {
     title: 'Service staff workspace',

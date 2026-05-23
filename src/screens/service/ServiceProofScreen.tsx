@@ -10,6 +10,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isDeliveryRole } from '../../lib/roleAliases';
 import {
   calculateDistanceMeters,
   getCurrentLocationFix,
@@ -37,7 +38,7 @@ function formatTimestamp(value: string | null) {
 }
 
 function getProofTitle(role: ServiceRole) {
-  if (role === 'delivery_boy') {
+  if (isDeliveryRole(role)) {
     return 'Delivery proof and attendance';
   }
 

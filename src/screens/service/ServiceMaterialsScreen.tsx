@@ -11,6 +11,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isDeliveryRole, isFieldTechnicianRole } from '../../lib/roleAliases';
 import type { ServiceTabParamList } from '../../navigation/types';
 import { getOrderedServiceTasks, useServiceStore } from '../../store/useServiceStore';
 import type { ServiceMaterialRequest, ServiceRole } from '../../types/service';
@@ -40,6 +41,8 @@ function getRoleCopy(role: ServiceRole) {
         helper: 'Pest-control jobs can only continue once the required chemical request is approved.',
         label: 'Chemical name',
       };
+    case 'delivery_agent':
+    case 'delivery_agent':
     case 'delivery_boy':
       return {
         title: 'Delivery manifest',
@@ -72,6 +75,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
   const role = useServiceStore((state) => state.role);
   const tasks = useServiceStore((state) => state.tasks);
   const materialRequests = useServiceStore((state) => state.materialRequests);
+  const stockLedger = useServiceStore((state) => state.stockLedger);
   const submitMaterialRequest = useServiceStore((state) => state.submitMaterialRequest);
   const markMaterialIssued = useServiceStore((state) => state.markMaterialIssued);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -97,6 +101,16 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
       ),
     [materialRequests],
   );
+
+  const handleMarkIssued = async (requestId: string, labelName: string) => {
+    const result = await markMaterialIssued(requestId);
+
+    setMessage(
+      result.updated
+        ? `${labelName} moved to issued stock and the task was reopened locally.`
+        : result.reason ?? 'This request could not be marked as issued from its current state.',
+    );
+  };
 
   useEffect(() => {
     if (!activeTasks.length) {
@@ -146,7 +160,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
 
       setMessage(
         result.submitted
-          ? 'Material request submitted. Use the Home tab refresh to simulate manager approval.'
+          ? 'Material request submitted. Use the Home tab refresh to apply manager approval locally.'
           : 'This request could not be attached to the selected task.',
       );
 
@@ -180,9 +194,15 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             {message}
           </Text>
         ) : null}
+        <View style={styles.stockRow}>
+          <Text style={[styles.caption, { color: colors.foreground }]}>Stock on hand</Text>
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            Parts {stockLedger.part} | Chemicals {stockLedger.chemical} | Supplies {stockLedger.supply}
+          </Text>
+        </View>
       </InfoCard>
 
-      {role !== 'delivery_boy' ? (
+      {!isDeliveryRole(role) ? (
         <InfoCard>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>New request</Text>
           <View style={styles.fieldGroup}>
@@ -243,7 +263,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
             inputTestID="qa_service_material_unit"
             label="Unit"
             onChangeText={setUnit}
-            placeholder={role === 'service_boy' ? 'packs' : 'pcs'}
+            placeholder={isFieldTechnicianRole(role) ? 'packs' : 'pcs'}
             value={unit}
           />
           <FormField
@@ -268,9 +288,9 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
 
       <InfoCard>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          {role === 'delivery_boy' ? 'Delivery task notes' : 'Request history'}
+          {isDeliveryRole(role) ? 'Delivery task notes' : 'Request history'}
         </Text>
-        {role === 'delivery_boy' ? (
+        {isDeliveryRole(role) ? (
           activeTasks.length ? (
             activeTasks.map((task, index) => (
               <View key={task.id} style={styles.requestCard} testID={`qa_service_delivery_note_card_${index}`}>
@@ -331,7 +351,7 @@ export function ServiceMaterialsScreen(_props: ServiceMaterialsScreenProps) {
                   label="Mark issued"
                   variant="ghost"
                   testID={`qa_service_mark_issued_${index}`}
-                  onPress={() => void markMaterialIssued(request.id)}
+                  onPress={() => void handleMarkIssued(request.id, request.label)}
                 />
               ) : null}
             </View>
@@ -364,6 +384,10 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.sans,
     fontSize: FontSize.sm,
     lineHeight: 20,
+  },
+  stockRow: {
+    gap: Spacing.xs,
+    paddingTop: Spacing.sm,
   },
   fieldGroup: {
     gap: Spacing.sm,

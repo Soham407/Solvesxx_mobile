@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { PackageSearch, ShieldAlert } from 'lucide-react-native';
 
@@ -11,7 +12,15 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import {
+  createBehaviorTicket,
+  createMaterialTicket,
+  fetchMobileOversightTickets,
+  isPreviewProfile,
+  updateMobileOversightTicketStatus,
+} from '../../lib/mobileBackend';
 import type { OversightTabParamList } from '../../navigation/types';
+import { useAppStore } from '../../store/useAppStore';
 import { useOversightStore } from '../../store/useOversightStore';
 import type { OversightSeverity, OversightTicketRecord, OversightTicketType } from '../../types/oversight';
 
@@ -88,9 +97,12 @@ function getTypeLabel(type: OversightTicketType) {
 
 export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
   const { colors } = useAppTheme();
-  const tickets = useOversightStore((state) => state.tickets);
+  const profile = useAppStore((state) => state.profile);
+  const previewMode = isPreviewProfile(profile);
+  const previewTickets = useOversightStore((state) => state.tickets);
   const createTicket = useOversightStore((state) => state.createTicket);
   const setTicketStatus = useOversightStore((state) => state.setTicketStatus);
+  const queryClient = useQueryClient();
 
   const [ticketType, setTicketType] = useState<OversightTicketType>('behavior');
   const [severity, setSeverity] = useState<OversightSeverity>('medium');
@@ -105,6 +117,17 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
   const [returnQuantity, setReturnQuantity] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
+
+  const ticketsQuery = useQuery({
+    queryKey: ['oversight', 'tickets', profile?.userId],
+    queryFn: fetchMobileOversightTickets,
+    enabled: Boolean(profile?.userId) && !previewMode,
+  });
+
+  const tickets = previewMode ? previewTickets : ticketsQuery.data ?? [];
+  const isLoading = !previewMode && ticketsQuery.isLoading;
+  const errorMessage = !previewMode ? ticketsQuery.error?.message ?? null : null;
 
   const sortedTickets = useMemo(
     () =>
@@ -158,19 +181,56 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
         return;
       }
 
-      await createTicket({
-        ticketType,
-        subjectName: subjectName.trim(),
-        category: category.trim(),
-        severity,
-        note: note.trim(),
-        evidenceUri: evidenceUri.trim() || null,
-        batchNumber: showMaterialFields ? batchNumber.trim() || undefined : undefined,
-        orderedQuantity: parsedOrderedQuantity,
-        receivedQuantity: parsedReceivedQuantity,
-        returnQuantity: parsedReturnQuantity,
-        locationName: locationName.trim() || null,
-      });
+      if (previewMode) {
+        await createTicket({
+          ticketType,
+          subjectName: subjectName.trim(),
+          category: category.trim(),
+          severity,
+          note: note.trim(),
+          evidenceUri: evidenceUri.trim() || null,
+          batchNumber: showMaterialFields ? batchNumber.trim() || undefined : undefined,
+          orderedQuantity: parsedOrderedQuantity,
+          receivedQuantity: parsedReceivedQuantity,
+          returnQuantity: parsedReturnQuantity,
+          locationName: locationName.trim() || null,
+        });
+      } else if (ticketType === 'behavior') {
+        const result = await createBehaviorTicket({
+          subjectName: subjectName.trim(),
+          category: category.trim(),
+          severity,
+          note: note.trim(),
+          evidenceUrls: evidenceUri.trim() ? [evidenceUri.trim()] : [],
+          locationName: locationName.trim() || null,
+        });
+
+        if (result?.success === false) {
+          throw new Error(result.error ?? 'Behavior ticket creation failed.');
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ['oversight', 'tickets', profile?.userId] });
+      } else {
+        const result = await createMaterialTicket({
+          subjectName: subjectName.trim(),
+          category: category.trim(),
+          note: note.trim(),
+          materialIssueType: ticketType === 'material_quality' ? 'quality' : 'quantity',
+          severity,
+          batchNumber: batchNumber.trim() || null,
+          orderedQuantity: parsedOrderedQuantity,
+          receivedQuantity: parsedReceivedQuantity,
+          returnQuantity: parsedReturnQuantity,
+          evidenceUrls: evidenceUri.trim() ? [evidenceUri.trim()] : [],
+          locationName: locationName.trim() || null,
+        });
+
+        if (result?.success === false) {
+          throw new Error(result.error ?? 'Material ticket creation failed.');
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ['oversight', 'tickets', profile?.userId] });
+      }
 
       setSubjectName('');
       setCategory('');
@@ -182,8 +242,46 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
       setReceivedQuantity('');
       setReturnQuantity('');
       setMessage('Issue ticket created and added to the oversight queue.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Issue ticket could not be created.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUpdateTicketStatus = async (
+    ticketId: string,
+    status: OversightTicketRecord['status'],
+    subject: string,
+  ) => {
+    setUpdatingTicketId(ticketId);
+
+    try {
+      if (previewMode) {
+        const result = await setTicketStatus(ticketId, status);
+
+        if (!result.updated) {
+          throw new Error('Ticket could not be updated from its current state.');
+        }
+      } else {
+        const result = await updateMobileOversightTicketStatus(ticketId, status);
+
+        if (result?.success === false) {
+          throw new Error(result.error ?? 'Ticket status update failed.');
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ['oversight', 'tickets', profile?.userId] });
+      }
+
+      setMessage(
+        status === 'acknowledged'
+          ? `Ticket acknowledged for ${subject}.`
+          : `Ticket closed for ${subject}.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Ticket status update failed.');
+    } finally {
+      setUpdatingTicketId(null);
     }
   };
 
@@ -206,6 +304,11 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
         {message ? (
           <Text style={[styles.caption, { color: colors.primary }]} testID="qa_oversight_tickets_message">
             {message}
+          </Text>
+        ) : null}
+        {errorMessage ? (
+          <Text style={[styles.caption, { color: colors.destructive }]}>
+            {errorMessage}
           </Text>
         ) : null}
 
@@ -382,6 +485,11 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>
           Tickets are ordered so the unresolved items stay at the top for quick follow-up.
         </Text>
+        {isLoading ? (
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            Loading ticket queue...
+          </Text>
+        ) : null}
         {sortedTickets.length ? (
           sortedTickets.map((ticket, index) => (
             <View key={ticket.id} style={styles.ticketCard} testID={`qa_oversight_ticket_card_${index}`}>
@@ -429,24 +537,18 @@ export function OversightTicketsScreen(_props: OversightTicketsScreenProps) {
               ) : null}
               <View style={styles.actionButtonRow}>
                 <ActionButton
-                  label="Acknowledge"
+                  label={updatingTicketId === ticket.id && ticket.status === 'open' ? 'Updating...' : 'Acknowledge'}
                   variant="secondary"
                   testID={`qa_oversight_ticket_acknowledge_${index}`}
-                  disabled={ticket.status !== 'open'}
-                  onPress={() => {
-                    void setTicketStatus(ticket.id, 'acknowledged');
-                    setMessage(`Ticket acknowledged for ${ticket.subjectName}.`);
-                  }}
+                  disabled={ticket.status !== 'open' || updatingTicketId === ticket.id}
+                  onPress={() => void handleUpdateTicketStatus(ticket.id, 'acknowledged', ticket.subjectName)}
                 />
                 <ActionButton
-                  label="Close"
+                  label={updatingTicketId === ticket.id && ticket.status === 'acknowledged' ? 'Updating...' : 'Close'}
                   variant="ghost"
                   testID={`qa_oversight_ticket_close_${index}`}
-                  disabled={ticket.status === 'closed'}
-                  onPress={() => {
-                    void setTicketStatus(ticket.id, 'closed');
-                    setMessage(`Ticket closed for ${ticket.subjectName}.`);
-                  }}
+                  disabled={ticket.status !== 'acknowledged' || updatingTicketId === ticket.id}
+                  onPress={() => void handleUpdateTicketStatus(ticket.id, 'closed', ticket.subjectName)}
                 />
               </View>
             </View>

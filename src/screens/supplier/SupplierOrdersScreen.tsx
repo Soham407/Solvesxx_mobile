@@ -73,11 +73,15 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
       return;
     }
 
-    await dispatchPO(poId, {
+    const result = await dispatchPO(poId, {
       vehicleDetails,
       dispatchNotes: nextDispatchNote,
     });
-    setMessage(`${poNumber} moved into dispatched status.`);
+    setMessage(
+      result.updated
+        ? `${poNumber} moved into dispatched status.` 
+        : `${poNumber} could not be dispatched from its current state.`,
+    );
   };
 
   return (
@@ -141,8 +145,13 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                   variant="secondary"
                   testID={`qa_supplier_po_acknowledge_${index}`}
                   onPress={() => {
-                    void acknowledgePO(po.id);
-                    setMessage(`${po.poNumber} acknowledged and ready for dispatch planning.`);
+                    void acknowledgePO(po.id).then((result) => {
+                      setMessage(
+                        result.updated
+                          ? `${po.poNumber} acknowledged and ready for dispatch planning.`
+                          : `${po.poNumber} could not be acknowledged from its current state.`,
+                      );
+                    });
                   }}
                 />
               ) : null}

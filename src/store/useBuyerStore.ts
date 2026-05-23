@@ -142,7 +142,7 @@ function normalizeHydratedState(
 interface BuyerStore extends BuyerPersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
-  refreshDashboard: () => Promise<void>;
+  refreshDashboard: () => Promise<{ advancedCount: number }>;
   createRequest: (input: {
     title: string;
     description: string;
@@ -154,8 +154,9 @@ interface BuyerStore extends BuyerPersistedState {
     quantity: number;
     unit: string;
   }) => Promise<void>;
-  acknowledgeInvoice: (id: string) => Promise<void>;
-  disputeInvoice: (id: string, note: string) => Promise<void>;
+  acknowledgeInvoice: (id: string) => Promise<{ updated: boolean }>;
+  disputeInvoice: (id: string, note: string) => Promise<{ updated: boolean }>;
+  recordInvoicePayment: (input: { id: string; amountPaise: number }) => Promise<{ updated: boolean }>;
   submitFeedback: (input: {
     requestId: string;
     rating: number;
@@ -195,14 +196,15 @@ export const useBuyerStore = create<BuyerStore>((set, get) => ({
   },
 
   refreshDashboard: async () => {
-    const targetRequestId = sortRequestsByCreatedAt(get().requests).find((request) =>
-      request.status === 'po_dispatched' || request.status === 'material_received',
-    )?.id;
+    const eligibleRequestIds = sortRequestsByCreatedAt(get().requests)
+      .filter((request) => request.status === 'po_dispatched' || request.status === 'material_received')
+      .map((request) => request.id);
+    const advancedCount = eligibleRequestIds.length;
 
     set((state) => ({
       refreshedAt: new Date().toISOString(),
       requests: state.requests.map((request) => {
-        if (request.id !== targetRequestId) {
+        if (!eligibleRequestIds.includes(request.id)) {
           return request;
         }
 
@@ -225,6 +227,9 @@ export const useBuyerStore = create<BuyerStore>((set, get) => ({
     }));
 
     await persistBuyerStore(get);
+    return {
+      advancedCount,
+    };
   },
 
   createRequest: async (input) => {
@@ -262,6 +267,14 @@ export const useBuyerStore = create<BuyerStore>((set, get) => ({
   },
 
   acknowledgeInvoice: async (id) => {
+    const targetInvoice = get().invoices.find((invoice) => invoice.id === id);
+
+    if (!targetInvoice || targetInvoice.status !== 'sent') {
+      return {
+        updated: false,
+      };
+    }
+
     set((state) => ({
       invoices: state.invoices.map((invoice) =>
         invoice.id === id
@@ -276,10 +289,20 @@ export const useBuyerStore = create<BuyerStore>((set, get) => ({
     }));
 
     await persistBuyerStore(get);
+    return {
+      updated: true,
+    };
   },
 
   disputeInvoice: async (id, note) => {
+    const targetInvoice = get().invoices.find((invoice) => invoice.id === id);
     const nextNote = note.trim();
+
+    if (!targetInvoice || targetInvoice.status === 'disputed') {
+      return {
+        updated: false,
+      };
+    }
 
     set((state) => ({
       invoices: state.invoices.map((invoice) =>
@@ -295,6 +318,54 @@ export const useBuyerStore = create<BuyerStore>((set, get) => ({
     }));
 
     await persistBuyerStore(get);
+    return {
+      updated: true,
+    };
+  },
+
+  recordInvoicePayment: async ({ id, amountPaise }) => {
+    const paymentAmount = Math.max(0, Math.round(amountPaise));
+
+    if (!paymentAmount) {
+      return {
+        updated: false,
+      };
+    }
+
+    const targetInvoice = get().invoices.find((invoice) => invoice.id === id);
+
+    if (!targetInvoice) {
+      return {
+        updated: false,
+      };
+    }
+
+    set((state) => ({
+      invoices: state.invoices.map((invoice) => {
+        if (invoice.id !== id) {
+          return invoice;
+        }
+
+        const nextDue = Math.max(0, invoice.dueAmountPaise - paymentAmount);
+
+        return {
+          ...invoice,
+          dueAmountPaise: nextDue,
+          paymentStatus: nextDue === 0 ? 'paid' : 'partial',
+          status: invoice.status === 'sent' ? 'acknowledged' : invoice.status,
+          note:
+            nextDue === 0
+              ? 'Buyer recorded the final payment from the mobile invoice desk.'
+              : 'Buyer recorded a partial payment from the mobile invoice desk.',
+        };
+      }),
+      refreshedAt: new Date().toISOString(),
+    }));
+
+    await persistBuyerStore(get);
+    return {
+      updated: true,
+    };
   },
 
   submitFeedback: async (input) => {

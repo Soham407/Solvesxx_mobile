@@ -1,4 +1,8 @@
 # GSD + FacilityPro Mobile — Design Spec
+> Archived design artifact from 2026-03-24.
+> It predates the current mobile role-routing and release-confidence model.
+> If this file disagrees with [root `STATUS.md`](../../../../../STATUS.md) or [root `CONTEXT.md`](../../../../../CONTEXT.md), prefer the root docs.
+
 **Date:** 2026-03-24
 **Status:** Approved
 **Scope:** GSD workflow setup and full mobile app architecture for FacilityPro

@@ -91,6 +91,7 @@ function mergeInbox(
 interface NotificationStore extends NotificationPersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
+  reset: () => Promise<void>;
   registerDevice: (profile: AppUserProfile | null) => Promise<void>;
   syncRemoteInbox: (records: NotificationRecord[]) => Promise<void>;
   upsertRemoteRecord: (record: NotificationRecord) => Promise<void>;
@@ -114,6 +115,17 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     });
 
     await saveNotificationState(hydratedState);
+  },
+
+  reset: async () => {
+    const nextState = createDefaultState(null);
+
+    set({
+      ...nextState,
+      hasHydrated: true,
+    });
+
+    await saveNotificationState(nextState);
   },
 
   registerDevice: async (profile) => {

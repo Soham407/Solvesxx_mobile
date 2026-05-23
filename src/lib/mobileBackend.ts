@@ -8,7 +8,13 @@ import type {
   GuardSosType,
   GuardVisitorEntry,
 } from '../types/guard';
-import type { OversightAlertRecord, OversightGuardRecord, OversightVisitorGateStat } from '../types/oversight';
+import type {
+  OversightAlertRecord,
+  OversightAttendanceRecord,
+  OversightGuardRecord,
+  OversightTicketRecord,
+  OversightVisitorGateStat,
+} from '../types/oversight';
 import type { ResidentPendingVisitor } from '../types/resident';
 
 const VISITOR_MEDIA_BUCKET = 'visitor-photos';
@@ -501,6 +507,7 @@ export async function fetchGuardVisitors(includeCheckedOut = true) {
       }),
       approvalDeadlineAt: row.approval_deadline_at ? String(row.approval_deadline_at) : null,
       decisionAt: row.decision_at ? String(row.decision_at) : null,
+      rejectionReason: row.rejection_reason ? String(row.rejection_reason) : null,
     })),
   );
 }
@@ -905,6 +912,161 @@ export async function fetchOversightVisitorStats() {
     pendingApprovals: typeof row.pending_approvals === 'number' ? row.pending_approvals : 0,
     deliveryVehicles: typeof row.delivery_vehicles === 'number' ? row.delivery_vehicles : 0,
   })) satisfies OversightVisitorGateStat[];
+}
+
+export async function fetchOversightAttendanceLog() {
+  const { data, error } = await supabase.rpc('get_oversight_attendance_log');
+
+  throwIfError(error);
+
+  return ((data ?? []) as Array<Record<string, string | null>>).map((row) => ({
+    id: String(row.id),
+    employeeName: row.employee_name ? String(row.employee_name) : 'Employee',
+    roleLabel: row.role_label ? String(row.role_label) : 'Employee',
+    locationName: row.location_name ? String(row.location_name) : 'Location pending',
+    checkInAt: row.check_in_at ? String(row.check_in_at) : null,
+    checkOutAt: row.check_out_at ? String(row.check_out_at) : null,
+    geoStatus:
+      row.geo_status === 'verified' ||
+      row.geo_status === 'outside_fence' ||
+      row.geo_status === 'missing'
+        ? row.geo_status
+        : 'missing',
+    status:
+      row.status === 'on_shift' ||
+      row.status === 'late' ||
+      row.status === 'completed' ||
+      row.status === 'absent'
+        ? row.status
+        : 'absent',
+  })) satisfies OversightAttendanceRecord[];
+}
+
+export async function fetchMobileOversightTickets() {
+  const { data, error } = await supabase.rpc('get_mobile_oversight_tickets');
+
+  throwIfError(error);
+
+  return ((data ?? []) as Array<Record<string, string | number | null | unknown[]>>).map((row) => {
+    const ticketType =
+      row.ticket_type === 'behavior'
+        ? 'behavior'
+        : row.ticket_type === 'return'
+          ? 'return'
+          : row.material_issue_type === 'quality'
+            ? 'material_quality'
+            : 'material_quantity';
+
+    const evidenceUrls = Array.isArray(row.evidence_urls)
+      ? row.evidence_urls.filter((value): value is string => typeof value === 'string')
+      : [];
+
+    return {
+      id: String(row.id),
+      ticketType,
+      subjectName: row.subject_name ? String(row.subject_name) : 'Ticket',
+      category: row.category ? String(row.category) : 'General',
+      severity:
+        row.severity === 'low' ||
+        row.severity === 'medium' ||
+        row.severity === 'high' ||
+        row.severity === 'critical'
+          ? row.severity
+          : 'medium',
+      status:
+        row.status === 'open' || row.status === 'acknowledged' || row.status === 'closed'
+          ? row.status
+          : 'open',
+      createdAt: row.created_at ? String(row.created_at) : new Date().toISOString(),
+      note: row.note ? String(row.note) : 'No notes attached.',
+      evidenceUri: evidenceUrls[0] ?? null,
+      batchNumber: row.batch_number ? String(row.batch_number) : null,
+      orderedQuantity: typeof row.ordered_quantity === 'number' ? row.ordered_quantity : null,
+      receivedQuantity: typeof row.received_quantity === 'number' ? row.received_quantity : null,
+      shortageQuantity: typeof row.shortage_quantity === 'number' ? row.shortage_quantity : null,
+      returnQuantity: typeof row.return_quantity === 'number' ? row.return_quantity : null,
+      locationName: row.location_name ? String(row.location_name) : null,
+    };
+  }) satisfies OversightTicketRecord[];
+}
+
+export async function createBehaviorTicket(payload: {
+  subjectName: string;
+  category: string;
+  severity: string;
+  note: string;
+  evidenceUrls?: string[];
+  locationName?: string | null;
+}) {
+  const { data, error } = await supabase.rpc('create_behavior_ticket', {
+    p_subject_name: payload.subjectName,
+    p_category: payload.category,
+    p_severity: payload.severity,
+    p_note: payload.note,
+    p_evidence_urls: payload.evidenceUrls ?? [],
+    p_location_name: payload.locationName ?? null,
+    p_linked_employee_id: null,
+  });
+
+  throwIfError(error);
+  return data as { success?: boolean; ticket_id?: string; ticket_number?: string; error?: string } | null;
+}
+
+export async function createMaterialTicket(payload: {
+  subjectName: string;
+  category: string;
+  note: string;
+  materialIssueType: 'quality' | 'quantity';
+  severity: string;
+  batchNumber?: string | null;
+  orderedQuantity?: number | null;
+  receivedQuantity?: number | null;
+  returnQuantity?: number | null;
+  evidenceUrls?: string[];
+  locationName?: string | null;
+}) {
+  const { data, error } = await supabase.rpc('create_material_ticket', {
+    p_subject_name: payload.subjectName,
+    p_category: payload.category,
+    p_note: payload.note,
+    p_material_issue_type: payload.materialIssueType,
+    p_severity: payload.severity,
+    p_batch_number: payload.batchNumber ?? null,
+    p_ordered_quantity: payload.orderedQuantity ?? null,
+    p_received_quantity: payload.receivedQuantity ?? null,
+    p_return_quantity: payload.returnQuantity ?? null,
+    p_evidence_urls: payload.evidenceUrls ?? [],
+    p_location_name: payload.locationName ?? null,
+    p_source_visitor_id: null,
+    p_inspection_outcome: null,
+  });
+
+  throwIfError(error);
+  return data as
+    | {
+        success?: boolean;
+        ticket_id?: string;
+        ticket_number?: string;
+        return_ticket_id?: string;
+        return_ticket_number?: string;
+        error?: string;
+      }
+    | null;
+}
+
+export async function updateMobileOversightTicketStatus(
+  ticketId: string,
+  status: 'open' | 'acknowledged' | 'closed',
+  resolutionNotes?: string,
+) {
+  const { data, error } = await supabase.rpc('update_oversight_ticket_status', {
+    p_ticket_id: ticketId,
+    p_status: status,
+    p_resolution_notes: resolutionNotes ?? null,
+  });
+
+  throwIfError(error);
+  return data as { success?: boolean; ticket_id?: string; ticket_number?: string; status?: string; error?: string } | null;
 }
 
 export async function acknowledgeMobilePanicAlert(alertId: string, notes?: string) {

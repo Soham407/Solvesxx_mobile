@@ -278,7 +278,7 @@ interface OversightStore extends OversightPersistedState {
   setTicketStatus: (
     id: string,
     status: OversightTicketRecord['status'],
-  ) => Promise<void>;
+  ) => Promise<{ updated: boolean }>;
   createTicket: (input: {
     ticketType: OversightTicketType;
     subjectName: string;
@@ -400,6 +400,18 @@ export const useOversightStore = create<OversightStore>((set, get) => ({
   },
 
   setTicketStatus: async (id, status) => {
+    const ticket = get().tickets.find((entry) => entry.id === id);
+
+    if (
+      !ticket ||
+      (status === 'acknowledged' && ticket.status !== 'open') ||
+      (status === 'closed' && ticket.status !== 'acknowledged')
+    ) {
+      return {
+        updated: false,
+      };
+    }
+
     set((state) => ({
       tickets: state.tickets.map((ticket) =>
         ticket.id === id
@@ -412,6 +424,9 @@ export const useOversightStore = create<OversightStore>((set, get) => ({
     }));
 
     await persistOversightStore(get);
+    return {
+      updated: true,
+    };
   },
 
   createTicket: async (input) => {

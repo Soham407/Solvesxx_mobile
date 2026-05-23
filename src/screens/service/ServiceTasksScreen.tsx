@@ -65,11 +65,13 @@ function getProofSummary(task: ServiceTaskRecord) {
 export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
   const { colors } = useAppTheme();
   const tasks = useServiceStore((state) => state.tasks);
+  const ppeChecklist = useServiceStore((state) => state.ppeChecklist);
   const startTask = useServiceStore((state) => state.startTask);
   const advanceDeliveryTask = useServiceStore((state) => state.advanceDeliveryTask);
   const completeTask = useServiceStore((state) => state.completeTask);
   const orderedTasks = useMemo(() => getOrderedServiceTasks(tasks), [tasks]);
   const [toast, setToast] = useState<string | null>(null);
+  const hasRequiredPpe = ppeChecklist.every((item) => !item.required || item.checked);
 
   const handleStart = async (task: ServiceTaskRecord) => {
     const result = await startTask(task.id);
@@ -160,9 +162,16 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
 
               {task.status === 'assigned' ? (
                 <ActionButton
-                  label={task.taskType === 'delivery' ? 'Mark picked up' : 'Start work'}
+                  label={
+                    task.taskType === 'delivery'
+                      ? 'Mark picked up'
+                      : task.taskType === 'pest_control' && !hasRequiredPpe
+                        ? 'PPE required'
+                        : 'Start work'
+                  }
                   variant="secondary"
                   testID={`qa_service_task_start_${index}`}
+                  disabled={task.taskType === 'pest_control' && !hasRequiredPpe}
                   onPress={() => void handleStart(task)}
                 />
               ) : null}
@@ -178,18 +187,30 @@ export function ServiceTasksScreen(_props: ServiceTasksScreenProps) {
 
               {task.taskType === 'delivery' && task.status === 'in_transit' ? (
                 <ActionButton
-                  label="Mark delivered"
+                  label={task.requiresDeliveryProof && !task.deliveryProofUri ? 'Proof required' : 'Mark delivered'}
                   variant="ghost"
                   testID={`qa_service_task_delivered_${index}`}
+                  disabled={task.requiresDeliveryProof && !task.deliveryProofUri}
                   onPress={() => void handleAdvanceDelivery(task)}
                 />
               ) : null}
 
               {task.taskType !== 'delivery' && task.status === 'in_progress' ? (
                 <ActionButton
-                  label="Complete task"
+                  label={
+                    task.requiresBeforeAfterPhotos &&
+                    (!task.beforePhotoUri || !task.afterPhotoUri)
+                      ? 'Proof required'
+                      : task.taskType === 'pest_control' && !hasRequiredPpe
+                        ? 'PPE required'
+                        : 'Complete task'
+                  }
                   variant="ghost"
                   testID={`qa_service_task_complete_${index}`}
+                  disabled={
+                    (task.requiresBeforeAfterPhotos && (!task.beforePhotoUri || !task.afterPhotoUri)) ||
+                    (task.taskType === 'pest_control' && !hasRequiredPpe)
+                  }
                   onPress={() => void handleComplete(task)}
                 />
               ) : null}

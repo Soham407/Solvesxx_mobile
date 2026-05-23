@@ -129,16 +129,17 @@ function normalizeHydratedState(
 interface SupplierStore extends SupplierPersistedState {
   hasHydrated: boolean;
   bootstrap: (profile: AppUserProfile | null) => Promise<void>;
-  refreshPortal: () => Promise<void>;
-  respondToIndent: (id: string, decision: 'accept' | 'reject') => Promise<void>;
-  acknowledgePO: (id: string) => Promise<void>;
-  dispatchPO: (id: string, input: { vehicleDetails: string; dispatchNotes: string }) => Promise<void>;
+  refreshPortal: () => Promise<{ receivedCount: number }>;
+  respondToIndent: (id: string, decision: 'accept' | 'reject') => Promise<{ updated: boolean }>;
+  acknowledgePO: (id: string) => Promise<{ updated: boolean }>;
+  dispatchPO: (id: string, input: { vehicleDetails: string; dispatchNotes: string }) => Promise<{ updated: boolean }>;
   submitBill: (input: {
     poId: string;
     billNumber?: string;
     totalAmountPaise: number;
     note: string;
-  }) => Promise<void>;
+  }) => Promise<{ submitted: boolean }>;
+  recordBillPayment: (id: string) => Promise<{ updated: boolean }>;
 }
 
 function buildPersistedState(state: SupplierStore): SupplierPersistedState {
@@ -173,12 +174,15 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
   },
 
   refreshPortal: async () => {
-    const targetPoId = sortPOsByCreatedAt(get().pos).find((po) => po.status === 'dispatched')?.id;
+    const dispatchedPoIds = sortPOsByCreatedAt(get().pos)
+      .filter((po) => po.status === 'dispatched')
+      .map((po) => po.id);
+    const receivedCount = dispatchedPoIds.length;
 
     set((state) => ({
       refreshedAt: new Date().toISOString(),
       pos: state.pos.map((po) =>
-        po.id === targetPoId && po.status === 'dispatched'
+        dispatchedPoIds.includes(po.id) && po.status === 'dispatched'
           ? {
               ...po,
               status: 'received',
@@ -188,13 +192,18 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     }));
 
     await persistSupplierStore(get);
+    return {
+      receivedCount,
+    };
   },
 
   respondToIndent: async (id, decision) => {
     const targetIndent = get().indents.find((indent) => indent.id === id);
 
     if (!targetIndent || targetIndent.status !== 'indent_forwarded') {
-      return;
+      return {
+        updated: false,
+      };
     }
 
     set((state) => ({
@@ -228,9 +237,20 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     }));
 
     await persistSupplierStore(get);
+    return {
+      updated: true,
+    };
   },
 
   acknowledgePO: async (id) => {
+    const targetPo = get().pos.find((po) => po.id === id);
+
+    if (!targetPo || targetPo.status !== 'sent_to_vendor') {
+      return {
+        updated: false,
+      };
+    }
+
     set((state) => ({
       pos: state.pos.map((po) =>
         po.id === id
@@ -252,6 +272,9 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     }));
 
     await persistSupplierStore(get);
+    return {
+      updated: true,
+    };
   },
 
   dispatchPO: async (id, input) => {
@@ -259,8 +282,10 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     const dispatchNotes = input.dispatchNotes.trim();
     const targetPo = get().pos.find((po) => po.id === id);
 
-    if (!targetPo) {
-      return;
+    if (!targetPo || targetPo.status !== 'acknowledged') {
+      return {
+        updated: false,
+      };
     }
 
     set((state) => ({
@@ -286,13 +311,18 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     }));
 
     await persistSupplierStore(get);
+    return {
+      updated: true,
+    };
   },
 
   submitBill: async (input) => {
     const targetPo = get().pos.find((po) => po.id === input.poId);
 
-    if (!targetPo) {
-      return;
+    if (!targetPo || !['acknowledged', 'dispatched', 'received'].includes(targetPo.status)) {
+      return {
+        submitted: false,
+      };
     }
 
     set((state) => ({
@@ -322,5 +352,37 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
     }));
 
     await persistSupplierStore(get);
+    return {
+      submitted: true,
+    };
+  },
+
+  recordBillPayment: async (id) => {
+    const targetBill = get().bills.find((bill) => bill.id === id);
+
+    if (!targetBill || targetBill.paymentStatus === 'paid') {
+      return {
+        updated: false,
+      };
+    }
+
+    set((state) => ({
+      bills: state.bills.map((bill) =>
+        bill.id === id
+          ? {
+              ...bill,
+              paymentStatus: 'paid',
+              status: 'paid',
+              note: 'Buyer/AP payment received and closed from the mobile supplier desk.',
+            }
+          : bill,
+      ),
+      refreshedAt: new Date().toISOString(),
+    }));
+
+    await persistSupplierStore(get);
+    return {
+      updated: true,
+    };
   },
 }));

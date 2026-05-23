@@ -58,6 +58,21 @@ export function SupplierIndentsScreen(_props: SupplierIndentsScreenProps) {
     [indents],
   );
 
+  const handleRespond = async (indentId: string, requestNumber: string, decision: 'accept' | 'reject') => {
+    const result = await respondToIndent(indentId, decision);
+
+    if (!result.updated) {
+      setMessage(`${requestNumber} could not be updated from its current state.`);
+      return;
+    }
+
+    setMessage(
+      decision === 'accept'
+        ? `${requestNumber} accepted and moved to PO generation.`
+        : `${requestNumber} rejected from the supplier desk.`,
+    );
+  };
+
   return (
     <ScreenShell
       eyebrow="Supplier Indents"
@@ -113,19 +128,13 @@ export function SupplierIndentsScreen(_props: SupplierIndentsScreenProps) {
                     label="Accept indent"
                     variant="secondary"
                     testID={`qa_supplier_indent_accept_${index}`}
-                    onPress={() => {
-                      void respondToIndent(indent.id, 'accept');
-                      setMessage(`${indent.requestNumber} accepted and moved to PO generation.`);
-                    }}
+                    onPress={() => void handleRespond(indent.id, indent.requestNumber, 'accept')}
                   />
                   <ActionButton
                     label="Reject indent"
                     variant="ghost"
                     testID={`qa_supplier_indent_reject_${index}`}
-                    onPress={() => {
-                      void respondToIndent(indent.id, 'reject');
-                      setMessage(`${indent.requestNumber} rejected from the supplier desk.`);
-                    }}
+                    onPress={() => void handleRespond(indent.id, indent.requestNumber, 'reject')}
                   />
                 </View>
               ) : null}

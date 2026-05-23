@@ -3,7 +3,12 @@ import type { GuardLocationSnapshot } from './guard';
 
 export type ServiceRole = Extract<
   AppRole,
-  'ac_technician' | 'pest_control_technician' | 'delivery_boy' | 'service_boy'
+  | 'ac_technician'
+  | 'pest_control_technician'
+  | 'delivery_agent'
+  | 'delivery_boy'
+  | 'field_technician'
+  | 'service_boy'
 >;
 
 export type ServiceDutyStatus = 'off_duty' | 'on_duty';
@@ -68,6 +73,12 @@ export interface ServiceMaterialRequest {
   note: string | null;
 }
 
+export interface ServiceStockLedger {
+  part: number;
+  chemical: number;
+  supply: number;
+}
+
 export interface ServicePPEItem {
   id: string;
   label: string;
@@ -84,5 +95,6 @@ export interface ServicePersistedState {
   attendanceLog: ServiceAttendanceEntry[];
   tasks: ServiceTaskRecord[];
   materialRequests: ServiceMaterialRequest[];
+  stockLedger: ServiceStockLedger;
   ppeChecklist: ServicePPEItem[];
 }

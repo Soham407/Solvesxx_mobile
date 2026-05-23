@@ -1,19 +1,50 @@
 import type { AppRole, AppUserProfile, GeoCalibrationRecord, LocationSummary } from '../types/app';
+import { normalizeAppRole } from './roleAliases';
 import { supabase } from './supabase';
+
+const APP_ROLES = new Set<AppRole>([
+  'admin',
+  'company_md',
+  'company_hod',
+  'account',
+  'delivery_agent',
+  'delivery_boy',
+  'buyer',
+  'supplier',
+  'vendor',
+  'security_guard',
+  'security_supervisor',
+  'society_manager',
+  'field_technician',
+  'service_boy',
+  'resident',
+  'storekeeper',
+  'site_supervisor',
+  'super_admin',
+  'ac_technician',
+  'pest_control_technician',
+  'employee',
+]);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function asRole(value: string | null | undefined): AppRole | null {
+function asRole(value: string | null | undefined): AppRole | null | 'unknown' {
   if (!value) {
     return null;
   }
 
-  return value as AppRole;
+  const normalized = normalizeAppRole(value);
+
+  if (normalized === 'unknown') {
+    return 'unknown';
+  }
+
+  return APP_ROLES.has(normalized as AppRole) ? (normalized as AppRole) : 'unknown';
 }
 
-function normalizeRoleRelation(relation: unknown): AppRole | null {
+function normalizeRoleRelation(relation: unknown): AppRole | null | 'unknown' {
   if (Array.isArray(relation)) {
     const firstRole = relation[0] as { role_name?: string } | undefined;
     return asRole(firstRole?.role_name);
@@ -223,7 +254,14 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
 
     employeeRow = data;
   } else {
-    employeeRow = await findEmployeeFallback({
+    // Primary lookup: auth_user_id is the most reliable link (set when employee is created)
+    const { data: empByAuthId } = await supabase
+      .from('employees')
+      .select('id, employee_code, first_name, last_name, photo_url, phone')
+      .eq('auth_user_id', user.id)
+      .maybeSingle();
+
+    employeeRow = empByAuthId ?? await findEmployeeFallback({
       phone: userRow?.phone ?? user.phone ?? null,
       email: typeof userRow?.email === 'string' ? userRow.email : user.email ?? null,
       fullName: userRow?.full_name ?? user.user_metadata?.full_name ?? null,
@@ -311,7 +349,29 @@ export async function fetchCurrentAppProfile(): Promise<AppUserProfile | null> {
     [employeeRow?.first_name, employeeRow?.last_name].filter(Boolean).join(' ').trim() ??
     null;
 
-  const role = normalizeRoleRelation(userRow?.roles) ?? (guardRow ? 'security_guard' : 'employee');
+  // Detect resident role when no public.users row exists (phone-OTP residents)
+  let isResident = false;
+  if (!userRow && !guardRow && societyId) {
+    const { data: residentCheck } = await supabase
+      .from('residents')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    isResident = Boolean(residentCheck?.id);
+  }
+
+  const userRole = normalizeRoleRelation(userRow?.roles);
+
+  if (userRole === 'unknown') {
+    return null;
+  }
+
+  const role = userRole ?? (guardRow ? 'security_guard' : isResident ? 'resident' : null);
+
+  if (!role) {
+    return null;
+  }
 
   return {
     userId: user.id,

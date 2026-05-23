@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
@@ -66,9 +67,18 @@ export function AppNavigator({ colorScheme }: AppNavigatorProps) {
   const biometricCapability = useAppStore((state) => state.biometricCapability);
   const isBiometricLocked = useAppStore((state) => state.isBiometricLocked);
   const recordActivity = useAppStore((state) => state.recordActivity);
+  const signOut = useAppStore((state) => state.signOut);
 
   useAppBootstrap();
   useSessionTimeout();
+
+  // If bootstrapping completed but profile is still null with a valid session,
+  // the auth token is stale or the account has no DB records — sign out immediately.
+  useEffect(() => {
+    if (!isBootstrapping && session && !profile) {
+      void signOut();
+    }
+  }, [isBootstrapping, profile, session, signOut]);
 
   const pendingStep = getPendingOnboardingStep({
     profile,

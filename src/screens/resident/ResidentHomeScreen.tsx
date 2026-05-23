@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -37,6 +37,7 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   const profile = useAppStore((state) => state.profile);
   const signOut = useAppStore((state) => state.signOut);
   const previewVisitorLog = useGuardStore((state) => state.visitorLog);
+  const refreshVisitorApprovals = useGuardStore((state) => state.refreshVisitorApprovals);
   const inbox = useNotificationStore((state) => state.inbox);
   const activeResidents = useResidentPresenceStore((state) => state.members);
   const hasLiveSync = useResidentPresenceStore((state) => state.hasLiveSync);
@@ -80,6 +81,20 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
   const totalInboxCount = previewMode ? previewVisitorLog.length : (visitorsQuery.data?.length ?? 0);
   const unreadAlerts = inbox.filter((entry) => entry.readAt === null).length;
 
+  useEffect(() => {
+    if (!previewMode) {
+      return;
+    }
+
+    void refreshVisitorApprovals();
+
+    const timer = setInterval(() => {
+      void refreshVisitorApprovals();
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [previewMode, refreshVisitorApprovals]);
+
   return (
     <ScreenShell
       eyebrow="Resident Access"
@@ -88,6 +103,14 @@ export function ResidentHomeScreen({ navigation }: ResidentHomeScreenProps) {
     >
       {previewMode ? (
         <PreviewModeBanner description="This resident session is running in preview/test mode. Visitor and notification data may come from preview state instead of live backend records." />
+      ) : null}
+
+      {!previewMode && visitorsQuery.isError ? (
+        <InfoCard>
+          <Text style={[styles.copy, { color: colors.destructive }]}>
+            Could not load visitor data. Check your connection and pull down to refresh.
+          </Text>
+        </InfoCard>
       ) : null}
 
       <InfoCard>

@@ -80,6 +80,7 @@ export interface GuardVisitorEntry {
   approvalStatus: GuardVisitorApprovalStatus;
   approvalDeadlineAt: string | null;
   decisionAt: string | null;
+  rejectionReason: string | null;
 }
 
 export interface GuardFrequentVisitorTemplate {
@@ -113,6 +114,7 @@ export interface GuardPersistedState {
   isOfflineMode: boolean;
   dutyStatus: GuardDutyStatus;
   lastPatrolResetAt: string | null;
+  geofenceBreakUntilAt: string | null;
   lastSyncAt: string | null;
   lastKnownLocation: GuardLocationSnapshot | null;
   attendanceLog: GuardAttendanceEntry[];
