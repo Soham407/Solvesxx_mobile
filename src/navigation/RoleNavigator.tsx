@@ -7,6 +7,13 @@ import { OversightNavigator } from './OversightNavigator';
 import { ResidentNavigator } from './ResidentNavigator';
 import { ServiceNavigator } from './ServiceNavigator';
 import { SupplierNavigator } from './SupplierNavigator';
+import { HODNavigator } from './HODNavigator';
+import { AccountNavigator } from './AccountNavigator';
+import { StorekeeperNavigator } from './StorekeeperNavigator';
+import { SiteSupervisorNavigator } from './SiteSupervisorNavigator';
+import { MDNavigator } from './MDNavigator';
+import { AdminNavigator } from './AdminNavigator';
+import { SuperAdminNavigator } from './SuperAdminNavigator';
 import { RoleLandingScreen } from '../screens/app/RoleLandingScreen';
 import type { AppRole } from '../types/app';
 import type { RoleStackParamList } from './types';
@@ -49,6 +56,34 @@ export function RoleNavigator({ role }: RoleNavigatorProps) {
 
   if (role === 'supplier' || role === 'vendor') {
     return <SupplierNavigator />;
+  }
+
+  if (role === 'company_hod') {
+    return <HODNavigator />;
+  }
+
+  if (role === 'account') {
+    return <AccountNavigator />;
+  }
+
+  if (role === 'storekeeper') {
+    return <StorekeeperNavigator />;
+  }
+
+  if (role === 'site_supervisor') {
+    return <SiteSupervisorNavigator />;
+  }
+
+  if (role === 'company_md') {
+    return <MDNavigator />;
+  }
+
+  if (role === 'admin') {
+    return <AdminNavigator />;
+  }
+
+  if (role === 'super_admin') {
+    return <SuperAdminNavigator />;
   }
 
   return (
