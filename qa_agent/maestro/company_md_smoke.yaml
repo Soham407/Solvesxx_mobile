@@ -1,0 +1,27 @@
+appId: com.facilitypro.mobile
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Mobile OTP Sign-In"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: qa_login_preview_company_md
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: qa_login_preview_company_md
+- extendedWaitUntil:
+    visible:
+      id: qa_md_tab_home
+    timeout: 30000
+- assertVisible:
+    id: qa_md_tab_home
+- assertVisible:
+    id: qa_md_tab_approvals
+- tapOn:
+    id: qa_md_tab_approvals
+- assertVisible: "Pending Approvals"
+- tapOn:
+    id: qa_md_tab_home
+- assertVisible: "Executive Overview"
