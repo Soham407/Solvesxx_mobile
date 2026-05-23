@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { LayoutDashboard, Users } from 'lucide-react-native';
+import { LayoutDashboard } from 'lucide-react-native';
 
 import { LoadingScreen } from '../components/shared/LoadingScreen';
 import { Spacing } from '../constants/spacing';
 import { FontFamily, FontSize } from '../constants/typography';
 import { useAppTheme } from '../hooks/useAppTheme';
-import { AdminActionsScreen } from '../screens/admin/AdminActionsScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
 import { useAppStore } from '../store/useAppStore';
 import { useAdminStore } from '../store/useAdminStore';
@@ -46,23 +45,13 @@ export function AdminNavigator() {
           fontFamily: FontFamily.sansSemiBold,
           fontSize: FontSize.xs,
         },
-        tabBarIcon: ({ color, size }) =>
-          route.name === 'AdminActions' ? (
-            <Users color={color} size={size} />
-          ) : (
-            <LayoutDashboard color={color} size={size} />
-          ),
+        tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
       })}
     >
       <Tab.Screen
         component={AdminHomeScreen}
         name="AdminHome"
         options={{ title: 'Dashboard', tabBarButtonTestID: 'qa_admin_tab_home' }}
-      />
-      <Tab.Screen
-        component={AdminActionsScreen}
-        name="AdminActions"
-        options={{ title: 'Users', tabBarButtonTestID: 'qa_admin_tab_actions' }}
       />
     </Tab.Navigator>
   );

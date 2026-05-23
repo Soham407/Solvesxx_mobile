@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { AlertTriangle, BarChart3, Building2, Users } from 'lucide-react-native';
+import { AlertTriangle, Building2, Users } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MetricCard } from '../../components/guard/MetricCard';
@@ -26,17 +26,11 @@ export function MDHomeScreen(_props: MDHomeScreenProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
   const hasHydrated = useMDStore((state) => state.hasHydrated);
-  const monthlyRevenue = useMDStore((state) => state.monthlyRevenue);
   const headcount = useMDStore((state) => state.headcount);
   const activeIncidents = useMDStore((state) => state.activeIncidents);
   const pendingApprovalCount = useMDStore((state) => state.pendingApprovalCount);
   const refresh = useMDStore((state) => state.refresh);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const formattedRevenue = useMemo(
-    () => currencyFormatter.format(Math.max(0, monthlyRevenue)),
-    [monthlyRevenue],
-  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -70,24 +64,14 @@ export function MDHomeScreen(_props: MDHomeScreenProps) {
           <Text style={[styles.eyebrow, { color: colors.accent }]}>MD Dashboard</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>Executive Overview</Text>
           <Text style={[styles.description, { color: colors.mutedForeground }]}>
-            Track revenue health, workforce strength, live security posture, and high-value approvals from one executive view.
+            Monitor workforce strength, live security posture, and high-value approvals.
           </Text>
         </View>
 
         <View style={styles.metricsGrid}>
           <View style={styles.metricCell}>
-            <MetricCard
-              icon={<BarChart3 color={colors.primary} size={20} />}
-              label="Monthly revenue"
-              value={formattedRevenue}
-            />
-          </View>
-          <View style={styles.metricCell}>
             <MetricCard icon={<Users color={colors.success} size={20} />} label="Total headcount" value={String(headcount)} />
           </View>
-        </View>
-
-        <View style={styles.metricsGrid}>
           <View style={styles.metricCell}>
             <MetricCard
               icon={<AlertTriangle color={colors.warning} size={20} />}
@@ -95,10 +79,13 @@ export function MDHomeScreen(_props: MDHomeScreenProps) {
               value={String(activeIncidents)}
             />
           </View>
+        </View>
+
+        <View style={styles.metricsGrid}>
           <View style={styles.metricCell}>
             <MetricCard
               icon={<Building2 color={colors.info} size={20} />}
-              label="Pending high-value approvals"
+              label="Pending approvals"
               value={String(pendingApprovalCount)}
             />
           </View>

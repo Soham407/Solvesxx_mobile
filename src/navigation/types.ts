@@ -76,8 +76,6 @@ export type HODTabParamList = {
 
 export type AccountTabParamList = {
   AccountHome: undefined;
-  AccountBills: undefined;
-  AccountPayments: undefined;
 };
 
 export type StorekeeperTabParamList = {
@@ -99,7 +97,6 @@ export type MDTabParamList = {
 
 export type AdminTabParamList = {
   AdminHome: undefined;
-  AdminActions: undefined;
 };
 
 export type SuperAdminTabParamList = {

@@ -12,7 +12,6 @@ import type { AppUserProfile } from '../types/app';
 interface MDState {
   hasHydrated: boolean;
   activeProfile: AppUserProfile | null;
-  monthlyRevenue: number;
   headcount: number;
   activeIncidents: number;
   pendingApprovalCount: number;
@@ -54,7 +53,6 @@ const FALLBACK_APPROVAL_ITEMS: MDApprovalItem[] = [
 ];
 
 const FALLBACK_SUMMARY = {
-  monthlyRevenue: 12400000,
   headcount: 312,
   activeIncidents: 3,
   pendingApprovalCount: FALLBACK_APPROVAL_ITEMS.length,
@@ -63,7 +61,6 @@ const FALLBACK_SUMMARY = {
 export const useMDStore = create<MDState>((set, get) => ({
   hasHydrated: false,
   activeProfile: null,
-  monthlyRevenue: 0,
   headcount: 0,
   activeIncidents: 0,
   pendingApprovalCount: 0,
@@ -91,7 +88,6 @@ export const useMDStore = create<MDState>((set, get) => ({
       ]);
 
       set({
-        monthlyRevenue: summary.monthlyRevenue,
         headcount: summary.headcount,
         activeIncidents: summary.activeIncidents,
         pendingApprovalCount: summary.pendingApprovalCount,
@@ -129,7 +125,6 @@ export const useMDStore = create<MDState>((set, get) => ({
       ]);
 
       set({
-        monthlyRevenue: summary.monthlyRevenue,
         headcount: summary.headcount,
         activeIncidents: summary.activeIncidents,
         pendingApprovalCount: summary.pendingApprovalCount,
