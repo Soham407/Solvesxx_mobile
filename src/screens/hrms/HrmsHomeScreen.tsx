@@ -9,6 +9,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import { fetchHrmsDashboardData } from '../../lib/hrms';
 import type { HRMSTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
@@ -51,6 +52,7 @@ export function HrmsHomeScreen({ navigation }: HrmsHomeScreenProps) {
     data?.documents.filter((item) => item.isVerified).length ?? 0;
   const totalLeaveBalance =
     data?.leaveTypes.reduce((sum, item) => sum + item.remainingDays, 0) ?? 0;
+  const showInternalPreviewActions = isInternalPreviewEnabled();
 
   return (
     <ScreenShell
@@ -166,19 +168,23 @@ export function HrmsHomeScreen({ navigation }: HrmsHomeScreenProps) {
 
       <NotificationInboxCard
         title="HRMS notifications"
-        description="Phase 7 previews employee-facing leave and payroll alerts with the same inbox history used for mobile verification."
-        actions={[
-          {
-            label: 'Preview leave decision',
-            route: 'leave_decision',
-            variant: 'secondary',
-          },
-          {
-            label: 'Preview payslip ready',
-            route: 'payslip_ready',
-            variant: 'ghost',
-          },
-        ]}
+        description="Track leave and payroll alerts with the same inbox history used for mobile verification."
+        actions={
+          showInternalPreviewActions
+            ? [
+                {
+                  label: 'Preview leave decision',
+                  route: 'leave_decision',
+                  variant: 'secondary',
+                },
+                {
+                  label: 'Preview payslip ready',
+                  route: 'payslip_ready',
+                  variant: 'ghost',
+                },
+              ]
+            : []
+        }
       />
     </ScreenShell>
   );

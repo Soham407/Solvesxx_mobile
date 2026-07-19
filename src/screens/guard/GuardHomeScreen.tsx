@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -16,6 +16,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import { capturePhoto } from '../../lib/media';
 import {
   fetchGuardVisitors,
@@ -39,6 +40,7 @@ import {
 import type { GuardTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useGuardStore } from '../../store/useGuardStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import type { GuardLocationSnapshot } from '../../types/guard';
 import type { GuardSosType } from '../../types/guard';
 
@@ -62,6 +64,10 @@ function getTodayCount(values: Array<{ recordedAt: string }>) {
   return values.filter((value) => new Date(value.recordedAt).toDateString() === today).length;
 }
 
+function isSameLocalDay(left: string, right: string) {
+  return new Date(left).toDateString() === new Date(right).toDateString();
+}
+
 export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const { colors } = useAppTheme();
   const profile = useAppStore((state) => state.profile);
@@ -70,6 +76,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const offlineQueue = useGuardStore((state) => state.offlineQueue);
   const lastSyncAt = useGuardStore((state) => state.lastSyncAt);
   const attendanceLog = useGuardStore((state) => state.attendanceLog);
+  const checklistSubmittedAt = useGuardStore((state) => state.checklistSubmittedAt);
   const visitorLog = useGuardStore((state) => state.visitorLog);
   const sosEvents = useGuardStore((state) => state.sosEvents);
   const lastPatrolResetAt = useGuardStore((state) => state.lastPatrolResetAt);
@@ -85,7 +92,10 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
   const clearGeofenceBreak = useGuardStore((state) => state.clearGeofenceBreak);
   const flushOfflineQueue = useGuardStore((state) => state.flushOfflineQueue);
   const signOut = useAppStore((state) => state.signOut);
+  const notificationInbox = useNotificationStore((state) => state.inbox);
+  const queuePreviewRoute = useNotificationStore((state) => state.queuePreviewRoute);
   const previewMode = isPreviewProfile(profile);
+  const showInternalPreviewActions = previewMode && isInternalPreviewEnabled();
   const usePreviewFlow = previewMode || isOfflineMode;
 
   const [message, setMessage] = useState<string | null>(null);
@@ -117,6 +127,47 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
     () => attendanceLog.find((entry) => entry.photoUri)?.photoUri ?? profile?.employeePhotoUrl ?? null,
     [attendanceLog, profile?.employeePhotoUrl],
   );
+  const hasChecklistReminderToday = useMemo(
+    () =>
+      notificationInbox.some(
+        (entry) =>
+          entry.route === 'checklist_reminder' &&
+          isSameLocalDay(entry.createdAt, new Date().toISOString()),
+      ),
+    [notificationInbox],
+  );
+
+  useEffect(() => {
+    if (!profile || dutyStatus !== 'on_duty' || checklistSubmittedAt) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const maybeQueueReminder = async () => {
+      if (cancelled) {
+        return;
+      }
+
+      if (new Date().getHours() < 9 || hasChecklistReminderToday) {
+        return;
+      }
+
+      await queuePreviewRoute('checklist_reminder', profile);
+      setMessage((current) => current ?? 'Daily checklist reminder queued.');
+    };
+
+    void maybeQueueReminder();
+
+    const timer = setInterval(() => {
+      void maybeQueueReminder();
+    }, 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [checklistSubmittedAt, dutyStatus, hasChecklistReminderToday, profile, queuePreviewRoute]);
 
   async function buildLocationSnapshot() {
     if (usePreviewFlow || (isStagingAutomationEnabled() && isStagingAutomationProfile(profile))) {
@@ -722,7 +773,7 @@ export function GuardHomeScreen({ navigation }: GuardHomeScreenProps) {
           </View>
         </View>
       </Modal>
-      {previewMode ? (
+      {showInternalPreviewActions ? (
         <NotificationInboxCard
           title="Guard notification centre"
           description="Preview-only notification routes for internal QA flows."

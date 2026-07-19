@@ -12,6 +12,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import type { BuyerTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useBuyerStore } from '../../store/useBuyerStore';
@@ -100,6 +101,7 @@ export function BuyerHomeScreen({ navigation }: BuyerHomeScreenProps) {
       setIsRefreshing(false);
     }
   };
+  const showInternalPreviewActions = isInternalPreviewEnabled();
 
   return (
     <ScreenShell
@@ -227,14 +229,18 @@ export function BuyerHomeScreen({ navigation }: BuyerHomeScreenProps) {
 
       <NotificationInboxCard
         title="Buyer notifications"
-        description="Use this preview lane to verify Phase 7 order-status pushes and the in-app audit history."
-        actions={[
-          {
-            label: 'Preview order update',
-            route: 'order_status_change',
-            variant: 'secondary',
-          },
-        ]}
+        description="Track order-status updates and the in-app audit history from this inbox."
+        actions={
+          showInternalPreviewActions
+            ? [
+                {
+                  label: 'Preview order update',
+                  route: 'order_status_change',
+                  variant: 'secondary',
+                },
+              ]
+            : []
+        }
       />
     </ScreenShell>
   );

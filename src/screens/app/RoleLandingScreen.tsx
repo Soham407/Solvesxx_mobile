@@ -9,29 +9,14 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isPrdMobileRole } from '../../lib/mobileScope';
 import type { RoleStackParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import type { AppRole } from '../../types/app';
 
 type RoleLandingScreenProps = NativeStackScreenProps<RoleStackParamList, 'RoleLanding'>;
 
-const ROLE_COPY: Record<AppRole, { title: string; subtitle: string }> = {
-  admin: {
-    title: 'Admin mobile workspace',
-    subtitle: 'Platform-wide oversight and quick approvals will land here next.',
-  },
-  company_md: {
-    title: 'Managing director workspace',
-    subtitle: 'High-level operational visibility is ready for later phases.',
-  },
-  company_hod: {
-    title: 'Department head workspace',
-    subtitle: 'You are routed into the HOD-specific mobile shell.',
-  },
-  account: {
-    title: 'Accounts workspace',
-    subtitle: 'Finance-focused mobile flows will layer onto this shell.',
-  },
+const ROLE_COPY = {
   delivery_agent: {
     title: 'Delivery workflow workspace',
     subtitle: 'Pickup, transit, and proof-of-delivery flows are next.',
@@ -76,18 +61,6 @@ const ROLE_COPY: Record<AppRole, { title: string; subtitle: string }> = {
     title: 'Resident workspace',
     subtitle: 'Resident-facing mobile routes are intentionally limited for now.',
   },
-  storekeeper: {
-    title: 'Storekeeper workspace',
-    subtitle: 'Inventory actions will build onto this shell later.',
-  },
-  site_supervisor: {
-    title: 'Site supervisor workspace',
-    subtitle: 'Site-level operations are routed into the right stack.',
-  },
-  super_admin: {
-    title: 'Super admin workspace',
-    subtitle: 'Platform controls are ready for later mobile expansion.',
-  },
   ac_technician: {
     title: 'AC technician workspace',
     subtitle: 'Before/after evidence and work logging will attach here.',
@@ -100,6 +73,11 @@ const ROLE_COPY: Record<AppRole, { title: string; subtitle: string }> = {
     title: 'Employee workspace',
     subtitle: 'General HRMS mobile features will attach to this role shell.',
   },
+} satisfies Partial<Record<AppRole, { title: string; subtitle: string }>>;
+
+const FALLBACK_COPY = {
+  title: 'Mobile workspace unavailable',
+  subtitle: 'This role is not part of the PRD mobile rollout.',
 };
 
 export function RoleLandingScreen({ route }: RoleLandingScreenProps) {
@@ -108,7 +86,9 @@ export function RoleLandingScreen({ route }: RoleLandingScreenProps) {
   const onboarding = useAppStore((state) => state.onboarding);
   const profile = useAppStore((state) => state.profile);
   const currentRole = route.params?.role ?? profile?.role ?? 'employee';
-  const copy = ROLE_COPY[currentRole] ?? ROLE_COPY.employee;
+  const copy = currentRole in ROLE_COPY
+    ? ROLE_COPY[currentRole as keyof typeof ROLE_COPY] ?? FALLBACK_COPY
+    : FALLBACK_COPY;
 
   return (
     <ScreenShell
@@ -121,7 +101,9 @@ export function RoleLandingScreen({ route }: RoleLandingScreenProps) {
         <RoleBadge label={currentRole.replace(/_/g, ' ')} />
         <Text style={[styles.title, { color: colors.foreground }]}>{profile?.fullName ?? 'FacilityPro user'}</Text>
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-          The foundation is active: OTP auth, onboarding, role routing, and session protection.
+          {isPrdMobileRole(currentRole)
+            ? 'The foundation is active: OTP auth, onboarding, role routing, and session protection.'
+            : 'This role is intentionally not exposed as a PRD mobile workspace.'}
         </Text>
       </InfoCard>
 

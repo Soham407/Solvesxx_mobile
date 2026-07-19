@@ -68,6 +68,9 @@ function createDefaultPOs(): SupplierPORecord[] {
       status: 'acknowledged',
       vehicleDetails: null,
       dispatchNotes: null,
+      deliveryNote: null,
+      challanNumber: null,
+      dispatchEta: null,
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
@@ -132,7 +135,16 @@ interface SupplierStore extends SupplierPersistedState {
   refreshPortal: () => Promise<{ receivedCount: number }>;
   respondToIndent: (id: string, decision: 'accept' | 'reject') => Promise<{ updated: boolean }>;
   acknowledgePO: (id: string) => Promise<{ updated: boolean }>;
-  dispatchPO: (id: string, input: { vehicleDetails: string; dispatchNotes: string }) => Promise<{ updated: boolean }>;
+  dispatchPO: (
+    id: string,
+    input: {
+      vehicleDetails: string;
+      dispatchNotes: string;
+      deliveryNote: string;
+      challanNumber: string;
+      dispatchEta: string;
+    },
+  ) => Promise<{ updated: boolean }>;
   submitBill: (input: {
     poId: string;
     billNumber?: string;
@@ -228,6 +240,9 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
                 status: 'sent_to_vendor',
                 vehicleDetails: null,
                 dispatchNotes: null,
+                deliveryNote: null,
+                challanNumber: null,
+                dispatchEta: null,
                 createdAt: new Date().toISOString(),
               },
               ...state.pos,
@@ -280,12 +295,23 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
   dispatchPO: async (id, input) => {
     const vehicleDetails = input.vehicleDetails.trim();
     const dispatchNotes = input.dispatchNotes.trim();
+    const deliveryNote = input.deliveryNote.trim();
+    const challanNumber = input.challanNumber.trim();
+    const dispatchEta = input.dispatchEta.trim();
     const targetPo = get().pos.find((po) => po.id === id);
 
     if (!targetPo || targetPo.status !== 'acknowledged') {
       return {
         updated: false,
       };
+    }
+
+    if (!deliveryNote) {
+      throw new Error('Add a delivery note before dispatching the PO.');
+    }
+
+    if (!dispatchEta) {
+      throw new Error('Add an ETA before dispatching the PO.');
     }
 
     set((state) => ({
@@ -296,6 +322,9 @@ export const useSupplierStore = create<SupplierStore>((set, get) => ({
               status: 'dispatched',
               vehicleDetails: vehicleDetails || 'Shared vehicle',
               dispatchNotes: dispatchNotes || null,
+              deliveryNote,
+              challanNumber: challanNumber || null,
+              dispatchEta,
             }
           : po,
       ),

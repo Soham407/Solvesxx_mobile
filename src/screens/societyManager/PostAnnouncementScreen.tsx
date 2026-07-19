@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CalendarDays, Megaphone } from 'lucide-react-native';
 
 import { ActionButton } from '../../components/shared/ActionButton';
@@ -12,13 +11,13 @@ import { BorderRadius, Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { createSocietyAnnouncement, isPreviewProfile } from '../../lib/mobileBackend';
-import type { OversightTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 
-type PostAnnouncementScreenProps = BottomTabScreenProps<
-  OversightTabParamList,
-  'OversightAnnouncements'
->;
+type PostAnnouncementScreenProps = {
+  navigation: {
+    navigate: (route: 'OversightHome') => void;
+  };
+};
 
 function isValidDate(value: string) {
   if (!value.trim()) {

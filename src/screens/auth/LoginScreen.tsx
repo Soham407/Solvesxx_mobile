@@ -9,7 +9,13 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { getDevPreviewCredentials, isDemoOtpBackendConfigured, sendOtp } from '../../lib/auth';
+import {
+  getDevPreviewCredentials,
+  isDemoOtpBackendConfigured,
+  isInternalPreviewBuild,
+  isStagingEmailLoginEnabled,
+  sendOtp,
+} from '../../lib/auth';
 import type { AuthStackParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -18,7 +24,10 @@ type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export function LoginScreen({ navigation }: LoginScreenProps) {
   const { colors } = useAppTheme();
   const devPreviewCredentials = getDevPreviewCredentials();
+  const showInternalPreviewAccess = isInternalPreviewBuild() && Boolean(devPreviewCredentials);
+  const internalPreviewCredentials = showInternalPreviewAccess ? devPreviewCredentials : null;
   const demoOtpMode = isDemoOtpBackendConfigured();
+  const showStagingEmailLogin = isStagingEmailLoginEnabled();
   const enterDevPreview = useAppStore((state) => state.enterDevPreview);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,7 +90,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           placeholder="+91 98765 43210"
           value={phoneNumber}
         />
-        {devPreviewCredentials ? (
+        {showInternalPreviewAccess ? (
           <View style={[styles.previewPanel, { borderColor: colors.warning + '55', backgroundColor: colors.warning + '10' }]}>
             <Pressable
               accessibilityRole="button"
@@ -98,19 +107,21 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
               Internal QA only. These options use preview identities or staging-only flows and should never be mistaken for real backend onboarding.
             </Text>
 
-            {previewAccessOpen ? (
+            {previewAccessOpen && internalPreviewCredentials ? (
               <View style={styles.previewActions}>
-                {devPreviewCredentials.map((credential) => (
+                {internalPreviewCredentials.map((credential) => (
                   <Text key={credential.phone} style={[styles.devHint, { color: colors.info }]}>
                     {credential.label}: use `{credential.phone.slice(-10)}` and OTP `{credential.otp}`.
                   </Text>
                 ))}
-                <ActionButton
-                  label="Staging email sign-in"
-                  testID="qa_login_email_sign_in"
-                  variant="ghost"
-                  onPress={() => navigation.navigate('EmailLogin')}
-                />
+                {showStagingEmailLogin ? (
+                  <ActionButton
+                    label="Staging email sign-in"
+                    testID="qa_login_email_sign_in"
+                    variant="ghost"
+                    onPress={() => navigation.navigate('EmailLogin')}
+                  />
+                ) : null}
                 <ActionButton
                   label="Preview buyer"
                   testID="qa_login_preview_buyer"
@@ -170,48 +181,6 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   testID="qa_login_preview_employee"
                   variant="secondary"
                   onPress={() => void enterDevPreview('employee')}
-                />
-                <ActionButton
-                  label="Preview HOD"
-                  testID="qa_login_preview_company_hod"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('company_hod')}
-                />
-                <ActionButton
-                  label="Preview Accounts"
-                  testID="qa_login_preview_account"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('account')}
-                />
-                <ActionButton
-                  label="Preview Storekeeper"
-                  testID="qa_login_preview_storekeeper"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('storekeeper')}
-                />
-                <ActionButton
-                  label="Preview Site Supervisor"
-                  testID="qa_login_preview_site_supervisor"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('site_supervisor')}
-                />
-                <ActionButton
-                  label="Preview MD"
-                  testID="qa_login_preview_company_md"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('company_md')}
-                />
-                <ActionButton
-                  label="Preview Admin"
-                  testID="qa_login_preview_admin"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('admin')}
-                />
-                <ActionButton
-                  label="Preview Super Admin"
-                  testID="qa_login_preview_super_admin"
-                  variant="secondary"
-                  onPress={() => void enterDevPreview('super_admin')}
                 />
               </View>
             ) : null}

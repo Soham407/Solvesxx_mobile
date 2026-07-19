@@ -65,6 +65,14 @@ const DEV_PREVIEW_PROFILES = [
   },
 ] as const satisfies Array<{ phone: string; role: AppRole; label: string }>;
 
+export function isInternalPreviewEnabled() {
+  return (process.env.EXPO_PUBLIC_ENABLE_MOBILE_QA_PREVIEW ?? '').trim() === 'true';
+}
+
+export function isInternalPreviewBuild() {
+  return __DEV__ && isInternalPreviewEnabled();
+}
+
 type DemoOtpVerifyResponse = {
   ok: boolean;
   phone: string;
@@ -100,7 +108,11 @@ function getWebAppUrl() {
 }
 
 export function isDemoOtpBackendConfigured() {
-  return Boolean(getWebAppUrl());
+  return isInternalPreviewEnabled() && Boolean(getWebAppUrl());
+}
+
+export function isStagingEmailLoginEnabled() {
+  return isInternalPreviewBuild() && !isDemoOtpBackendConfigured();
 }
 
 async function callDemoOtpEndpoint<TResponse>(path: string, body: Record<string, string>) {

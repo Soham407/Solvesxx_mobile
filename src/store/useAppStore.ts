@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-import { signOut as signOutRequest } from '../lib/auth';
+import { isInternalPreviewBuild, signOut as signOutRequest } from '../lib/auth';
 import { clearBuyerState, clearSupplierState } from '../lib/commerceStorage';
 import { getBiometricCapability, type BiometricCapability } from '../lib/biometrics';
 import { clearGuardState } from '../lib/guardStorage';
@@ -307,6 +307,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   enterDevPreview: async (role = 'security_guard') => {
+    if (!isInternalPreviewBuild()) {
+      throw new Error('Preview access is disabled for this build.');
+    }
+
     await Promise.all([
       useResidentPresenceStore.getState().reset(),
       useNotificationStore.getState().reset(),

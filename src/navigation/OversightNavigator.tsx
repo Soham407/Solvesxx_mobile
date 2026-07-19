@@ -22,6 +22,7 @@ export function OversightNavigator() {
   const profile = useAppStore((state) => state.profile);
   const bootstrap = useOversightStore((state) => state.bootstrap);
   const hasHydrated = useOversightStore((state) => state.hasHydrated);
+  const isSocietyManager = profile?.role === 'society_manager';
 
   useEffect(() => {
     void bootstrap(profile);
@@ -90,7 +91,7 @@ export function OversightNavigator() {
         name="OversightTickets"
         options={{ title: 'Tickets', tabBarButtonTestID: 'qa_oversight_tab_tickets' }}
       />
-      {profile?.role === 'society_manager' ? (
+      {isSocietyManager ? (
         <Tab.Screen
           component={PostAnnouncementScreen}
           name="OversightAnnouncements"

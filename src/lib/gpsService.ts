@@ -9,6 +9,9 @@ interface GpsServiceState {
   lastExitWarningTime: number | null;
   isOutsideGeofence: boolean;
   geofenceBreakUntilAt: number | null;
+  lastTrackedLocation: GuardLocationSnapshot | null;
+  stationarySinceAt: number | null;
+  inactivityAlertRaisedAt: number | null;
 }
 
 const state: GpsServiceState = {
@@ -17,7 +20,19 @@ const state: GpsServiceState = {
   lastExitWarningTime: null,
   isOutsideGeofence: false,
   geofenceBreakUntilAt: null,
+  lastTrackedLocation: null,
+  stationarySinceAt: null,
+  inactivityAlertRaisedAt: null,
 };
+
+const INACTIVITY_THRESHOLD_MS = 30 * 60 * 1000;
+const MOVEMENT_THRESHOLD_METERS = 20;
+
+function resetInactivityState() {
+  state.lastTrackedLocation = null;
+  state.stationarySinceAt = null;
+  state.inactivityAlertRaisedAt = null;
+}
 
 export function setGeofenceBreakUntilAt(value: string | number | null) {
   const nextUntilAt =
@@ -38,6 +53,7 @@ export async function startPeriodicGpsTracking(
   profile: AppUserProfile | null,
   intervalSeconds: number = 300, // 5 minutes default
   onLocationUpdate?: (location: GuardLocationSnapshot) => void,
+  onInactivityDetected?: (location: GuardLocationSnapshot, reason: string) => void,
 ) {
   if (!profile?.assignedLocation) {
     console.warn('[GPS] No assigned location. Periodic tracking disabled.');
@@ -46,10 +62,13 @@ export async function startPeriodicGpsTracking(
 
   // Clear any existing interval
   stopPeriodicGpsTracking();
+  resetInactivityState();
 
   // Capture immediately on start
   try {
-    await captureAndUploadLocation(profile);
+    const location = await captureAndUploadLocation(profile);
+    state.lastTrackedLocation = location;
+    state.stationarySinceAt = Date.now();
   } catch (error) {
     console.warn('[GPS] Initial capture failed:', error);
   }
@@ -59,6 +78,44 @@ export async function startPeriodicGpsTracking(
     try {
       const location = await captureAndUploadLocation(profile);
       onLocationUpdate?.(location);
+      const now = Date.now();
+      const previousLocation = state.lastTrackedLocation;
+
+      if (!previousLocation) {
+        state.lastTrackedLocation = location;
+        state.stationarySinceAt = now;
+        state.inactivityAlertRaisedAt = null;
+        return;
+      }
+
+      const movedMeters = calculateDistanceMeters(
+        previousLocation.latitude,
+        previousLocation.longitude,
+        location.latitude,
+        location.longitude,
+      );
+
+      if (!Number.isFinite(movedMeters) || movedMeters > MOVEMENT_THRESHOLD_METERS) {
+        state.lastTrackedLocation = location;
+        state.stationarySinceAt = now;
+        state.inactivityAlertRaisedAt = null;
+        return;
+      }
+
+      if (!state.stationarySinceAt) {
+        state.stationarySinceAt = now;
+      }
+
+      if (
+        !state.inactivityAlertRaisedAt &&
+        now - state.stationarySinceAt >= INACTIVITY_THRESHOLD_MS
+      ) {
+        state.inactivityAlertRaisedAt = now;
+        onInactivityDetected?.(
+          location,
+          `Guard has been stationary for ${Math.round((now - state.stationarySinceAt) / 60000)} minutes.`,
+        );
+      }
     } catch (error) {
       console.warn('[GPS] Periodic capture failed:', error);
       // Don't crash on error, continue polling
@@ -77,6 +134,8 @@ export function stopPeriodicGpsTracking() {
     state.pollingInterval = null;
     console.log('[GPS] Stopped periodic tracking');
   }
+
+  resetInactivityState();
 }
 
 /**

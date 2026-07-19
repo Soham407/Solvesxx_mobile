@@ -12,6 +12,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import type { SupplierTabParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/useAppStore';
 import { useSupplierStore } from '../../store/useSupplierStore';
@@ -85,6 +86,7 @@ export function SupplierHomeScreen({ navigation }: SupplierHomeScreenProps) {
       setIsRefreshing(false);
     }
   };
+  const showInternalPreviewActions = isInternalPreviewEnabled();
 
   return (
     <ScreenShell
@@ -188,14 +190,18 @@ export function SupplierHomeScreen({ navigation }: SupplierHomeScreenProps) {
 
       <NotificationInboxCard
         title="Supplier notifications"
-        description="Phase 7 previews the new-indent route and keeps a local trail of dispatch-ready supplier alerts."
-        actions={[
-          {
-            label: 'Preview new indent',
-            route: 'new_indent',
-            variant: 'secondary',
-          },
-        ]}
+        description="Track new indents and keep a local trail of dispatch-ready supplier alerts."
+        actions={
+          showInternalPreviewActions
+            ? [
+                {
+                  label: 'Preview new indent',
+                  route: 'new_indent',
+                  variant: 'secondary',
+                },
+              ]
+            : []
+        }
       />
     </ScreenShell>
   );

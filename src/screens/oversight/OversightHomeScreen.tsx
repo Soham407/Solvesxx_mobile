@@ -14,6 +14,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import {
   fetchOversightAlertFeed,
   fetchOversightLiveGuards,
@@ -59,6 +60,7 @@ export function OversightHomeScreen(_props: OversightHomeScreenProps) {
   const signOut = useAppStore((state) => state.signOut);
   const profile = useAppStore((state) => state.profile);
   const previewMode = isPreviewProfile(profile);
+  const showInternalPreviewActions = previewMode && isInternalPreviewEnabled();
   const role = profile?.role === 'society_manager' ? 'society_manager' : 'security_supervisor';
   const previewGuards = useOversightStore((state) => state.guards);
   const previewAlerts = useOversightStore((state) => state.alerts);
@@ -291,7 +293,7 @@ export function OversightHomeScreen(_props: OversightHomeScreenProps) {
             : 'This inbox now mirrors the live backend notification table and Realtime delivery feed.'
         }
         actions={
-          previewMode
+          showInternalPreviewActions
             ? [
                 {
                   label: 'Preview SOS alert',

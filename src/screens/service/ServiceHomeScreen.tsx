@@ -12,6 +12,7 @@ import { ScreenShell } from '../../components/shared/ScreenShell';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import { isDeliveryRole } from '../../lib/roleAliases';
 import {
   calculateDistanceMeters,
@@ -96,6 +97,7 @@ export function ServiceHomeScreen({ navigation }: ServiceHomeScreenProps) {
   const profile = useAppStore((state) => state.profile);
   const signOut = useAppStore((state) => state.signOut);
   const role = useServiceStore((state) => state.role);
+  const showInternalPreviewActions = isInternalPreviewEnabled();
   const dutyStatus = useServiceStore((state) => state.dutyStatus);
   const lastKnownLocation = useServiceStore((state) => state.lastKnownLocation);
   const lastSyncAt = useServiceStore((state) => state.lastSyncAt);
@@ -372,14 +374,18 @@ export function ServiceHomeScreen({ navigation }: ServiceHomeScreenProps) {
       {role === 'pest_control_technician' ? (
         <NotificationInboxCard
           title="Resident advisory lane"
-          description="Phase 7 previews the resident-facing pest-control notification route from the technician workspace."
-          actions={[
-            {
-              label: 'Preview pest control alert',
-              route: 'pest_control_alert',
-              variant: 'secondary',
-            },
-          ]}
+          description="Resident-facing pest-control notifications linked to active field tasks appear here."
+          actions={
+            showInternalPreviewActions
+              ? [
+                  {
+                    label: 'Preview pest control alert',
+                    route: 'pest_control_alert',
+                    variant: 'secondary',
+                  },
+                ]
+              : []
+          }
         />
       ) : null}
     </ScreenShell>

@@ -28,11 +28,17 @@ function formatValue(value: string | null) {
     return 'Not scheduled';
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function getStatusTone(status: SupplierPORecord['status']) {
@@ -55,6 +61,9 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [vehicleDrafts, setVehicleDrafts] = useState<Record<string, string>>({});
   const [dispatchNotes, setDispatchNotes] = useState<Record<string, string>>({});
+  const [deliveryNotes, setDeliveryNotes] = useState<Record<string, string>>({});
+  const [challanNumbers, setChallanNumbers] = useState<Record<string, string>>({});
+  const [dispatchEtas, setDispatchEtas] = useState<Record<string, string>>({});
 
   const orderedPOs = useMemo(
     () =>
@@ -67,21 +76,41 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
   const handleDispatch = async (poId: string, poNumber: string) => {
     const vehicleDetails = vehicleDrafts[poId]?.trim() ?? '';
     const nextDispatchNote = dispatchNotes[poId] ?? '';
+    const deliveryNote = deliveryNotes[poId]?.trim() ?? '';
+    const challanNumber = challanNumbers[poId]?.trim() ?? '';
+    const dispatchEta = dispatchEtas[poId]?.trim() ?? '';
 
     if (!vehicleDetails) {
       setMessage(`Add a vehicle number before dispatching ${poNumber}.`);
       return;
     }
 
-    const result = await dispatchPO(poId, {
-      vehicleDetails,
-      dispatchNotes: nextDispatchNote,
-    });
-    setMessage(
-      result.updated
-        ? `${poNumber} moved into dispatched status.` 
-        : `${poNumber} could not be dispatched from its current state.`,
-    );
+    if (!deliveryNote) {
+      setMessage(`Add a delivery note before dispatching ${poNumber}.`);
+      return;
+    }
+
+    if (!dispatchEta) {
+      setMessage(`Add an ETA before dispatching ${poNumber}.`);
+      return;
+    }
+
+    try {
+      const result = await dispatchPO(poId, {
+        vehicleDetails,
+        dispatchNotes: nextDispatchNote,
+        deliveryNote,
+        challanNumber,
+        dispatchEta,
+      });
+      setMessage(
+        result.updated
+          ? `${poNumber} moved into dispatched status.`
+          : `${poNumber} could not be dispatched from its current state.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `${poNumber} could not be dispatched.`);
+    }
   };
 
   return (
@@ -135,6 +164,21 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                   Vehicle: {po.vehicleDetails}
                 </Text>
               ) : null}
+              {po.dispatchEta ? (
+                <Text style={[styles.caption, { color: colors.foreground }]}>
+                  ETA: {formatValue(po.dispatchEta)}
+                </Text>
+              ) : null}
+              {po.challanNumber ? (
+                <Text style={[styles.caption, { color: colors.foreground }]}>
+                  Challan: {po.challanNumber}
+                </Text>
+              ) : null}
+              {po.deliveryNote ? (
+                <Text style={[styles.caption, { color: colors.foreground }]}>
+                  Delivery note: {po.deliveryNote}
+                </Text>
+              ) : null}
               {po.dispatchNotes ? (
                 <Text style={[styles.caption, { color: colors.foreground }]}>{po.dispatchNotes}</Text>
               ) : null}
@@ -184,6 +228,45 @@ export function SupplierOrdersScreen(_props: SupplierOrdersScreenProps) {
                     style={styles.multilineField}
                     textAlignVertical="top"
                     value={dispatchNotes[po.id] ?? ''}
+                  />
+                  <FormField
+                    inputTestID={`qa_supplier_po_delivery_note_${index}`}
+                    label="Delivery note / crew manifest"
+                    multiline
+                    onChangeText={(value) =>
+                      setDeliveryNotes((state) => ({
+                        ...state,
+                        [po.id]: value,
+                      }))
+                    }
+                    placeholder="Driver, helper, and handoff details for the receiving desk."
+                    style={styles.multilineField}
+                    textAlignVertical="top"
+                    value={deliveryNotes[po.id] ?? ''}
+                  />
+                  <FormField
+                    inputTestID={`qa_supplier_po_challan_${index}`}
+                    label="Challan number"
+                    onChangeText={(value) =>
+                      setChallanNumbers((state) => ({
+                        ...state,
+                        [po.id]: value,
+                      }))
+                    }
+                    placeholder="CH-2026-0041"
+                    value={challanNumbers[po.id] ?? ''}
+                  />
+                  <FormField
+                    inputTestID={`qa_supplier_po_eta_${index}`}
+                    label="ETA"
+                    onChangeText={(value) =>
+                      setDispatchEtas((state) => ({
+                        ...state,
+                        [po.id]: value,
+                      }))
+                    }
+                    placeholder="2026-05-25 18:30"
+                    value={dispatchEtas[po.id] ?? ''}
                   />
                   <ActionButton
                     label="Dispatch PO"

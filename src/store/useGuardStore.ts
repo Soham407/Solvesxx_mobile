@@ -9,6 +9,7 @@ import {
   setGeofenceBreakUntilAt,
 } from '../lib/gpsService';
 import type { AppUserProfile } from '../types/app';
+import { useNotificationStore } from './useNotificationStore';
 import type {
   GuardAttendanceEntry,
   GuardChecklistItem,
@@ -881,11 +882,29 @@ export const useGuardStore = create<GuardStore>((set, get) => ({
       return;
     }
 
-    startPeriodicGpsTracking(profile, 300, (location) => {
-      set({
-        lastKnownLocation: location,
-      });
-    });
+    startPeriodicGpsTracking(
+      profile,
+      300,
+      (location) => {
+        set({
+          lastKnownLocation: location,
+        });
+      },
+      async (location, reason) => {
+        try {
+          await useNotificationStore.getState().queuePreviewRoute('inactivity_alert', profile);
+        } catch (error) {
+          console.warn('[Guard Store] Inactivity notification queue failed:', error);
+        }
+
+        await get().triggerSos({
+          alertType: 'inactivity',
+          note: reason,
+          location,
+          photoUri: null,
+        });
+      },
+    );
   },
 
   stopGpsPolling: () => {

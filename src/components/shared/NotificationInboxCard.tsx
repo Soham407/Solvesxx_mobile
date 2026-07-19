@@ -6,6 +6,7 @@ import { InfoCard } from './InfoCard';
 import { Spacing } from '../../constants/spacing';
 import { FontFamily, FontSize } from '../../constants/typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { isInternalPreviewEnabled } from '../../lib/auth';
 import { getRouteLabel } from '../../lib/notifications';
 import { useAppStore } from '../../store/useAppStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
@@ -84,7 +85,7 @@ export function NotificationInboxCard({
         </View>
       </View>
 
-      {actions.length ? (
+      {isInternalPreviewEnabled() && actions.length ? (
         <View style={styles.actionGroup}>
           {actions.map((action) => (
             <ActionButton
