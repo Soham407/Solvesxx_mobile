@@ -18,43 +18,26 @@ interface RoleNavigatorProps {
   role: AppRole | null;
 }
 
+const NAVIGATORS: Partial<Record<AppRole, React.ComponentType>> = {
+  security_guard: GuardNavigator,
+  employee: HRMSNavigator,
+  resident: ResidentNavigator,
+  security_supervisor: OversightNavigator,
+  society_manager: OversightNavigator,
+  buyer: BuyerNavigator,
+  supplier: SupplierNavigator,
+  vendor: SupplierNavigator,
+};
+
 export function RoleNavigator({ role }: RoleNavigatorProps) {
-  if (role === 'security_guard') {
-    return <GuardNavigator />;
-  }
-
-  if (role === 'employee') {
-    return <HRMSNavigator />;
-  }
-
-  if (role === 'resident') {
-    return <ResidentNavigator />;
-  }
-
-  if (
-    role === 'security_supervisor' ||
-    role === 'society_manager' ||
-    role === 'admin' ||
-    role === 'super_admin' ||
-    role === 'company_md' ||
-    role === 'company_hod' ||
-    role === 'site_supervisor' ||
-    role === 'account' ||
-    role === 'storekeeper'
-  ) {
-    return <OversightNavigator />;
-  }
-
-  if (role === 'buyer') {
-    return <BuyerNavigator />;
-  }
-
-  if (isServiceRole(role)) {
-    return <ServiceNavigator />;
-  }
-
-  if (role === 'supplier' || role === 'vendor') {
-    return <SupplierNavigator />;
+  if (role) {
+    const Navigator = NAVIGATORS[role];
+    if (Navigator) {
+      return <Navigator />;
+    }
+    if (isServiceRole(role)) {
+      return <ServiceNavigator />;
+    }
   }
 
   return (
